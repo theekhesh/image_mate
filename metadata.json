@@ -1,0 +1,6 @@
+{
+  "name": "Photoshop Web Studio",
+  "description": "Professional web and desktop photo editing suite with full multi-layer engine, PSD support, raster/vector/text tools, blend modes, adjustments, and filter gallery.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
