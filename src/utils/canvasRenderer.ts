@@ -1,8 +1,8 @@
 /**
- * Photoshop Web Studio - Layer Composite & Drawing Engine
+ * ImageMate Studio - Layer Composite & Drawing Engine
  */
 
-import { Layer, DocumentProject, Guide, SelectionState, BlendMode } from '../types/photoshop';
+import { Layer, DocumentProject, Guide, SelectionState, BlendMode } from '../types/imagemate';
 import { FilterEngine } from './filterEngine';
 
 export class CanvasRenderer {

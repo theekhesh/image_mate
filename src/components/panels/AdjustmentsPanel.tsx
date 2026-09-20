@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - 1-Click Adjustments Panel
+ * ImageMate Studio - 1-Click Adjustments Panel
  */
 
 import React from 'react';
-import { AdjustmentType } from '../../types/photoshop';
+import { AdjustmentType } from '../../types/imagemate';
 import {
   Sun,
   Sliders,

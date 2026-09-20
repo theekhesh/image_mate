@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - Canvas Size & Image Size Modal
+ * ImageMate Studio - Canvas Size & Image Size Modal
  */
 
 import React, { useState } from 'react';
-import { DocumentProject } from '../../types/photoshop';
+import { DocumentProject } from '../../types/imagemate';
 import { X, Check, Scaling, Lock, Unlock } from 'lucide-react';
 
 interface CanvasSizeModalProps {

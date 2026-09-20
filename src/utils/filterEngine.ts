@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - High Performance Filter & Adjustment Engine
+ * ImageMate Studio - High Performance Filter & Adjustment Engine
  */
 
 export class FilterEngine {

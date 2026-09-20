@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - New Document Modal
+ * ImageMate Studio - New Document Modal
  */
 
 import React, { useState } from 'react';

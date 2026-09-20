@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - Layer Styles Dialog (fx)
+ * ImageMate Studio - Layer Styles Dialog (fx)
  */
 
 import React, { useState } from 'react';
-import { Layer, LayerEffects } from '../../types/photoshop';
+import { Layer, LayerEffects } from '../../types/imagemate';
 import { X, Check, Sliders, ShieldCheck } from 'lucide-react';
 
 interface LayerStylesModalProps {

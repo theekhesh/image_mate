@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - Image Adjustments Modal
+ * ImageMate Studio - Image Adjustments Modal
  */
 
 import React, { useState } from 'react';
-import { AdjustmentType, Layer } from '../../types/photoshop';
+import { AdjustmentType, Layer } from '../../types/imagemate';
 import { X, Check, RotateCcw, Sliders } from 'lucide-react';
 
 interface ImageAdjustmentsModalProps {

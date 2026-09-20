@@ -1,8 +1,8 @@
 /**
- * Photoshop Web Studio - Multi-Format Export & Import Engine
+ * ImageMate Studio - Multi-Format Export & Import Engine
  */
 
-import { DocumentProject, Layer } from '../types/photoshop';
+import { DocumentProject, Layer } from '../types/imagemate';
 import { CanvasRenderer } from './canvasRenderer';
 
 export class FileExporter {
@@ -79,7 +79,7 @@ export class FileExporter {
   }
 
   /**
-   * Save Project as JSON (Photoshop Web Project .psd.json)
+   * Save Project as JSON (ImageMate Project .json)
    */
   static saveProjectJson(doc: DocumentProject) {
     // Serialize raster canvases to base64 data URLs

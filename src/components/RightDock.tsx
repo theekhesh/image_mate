@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Collapsible Right Panel Dock
+ * ImageMate Studio - Collapsible Right Panel Dock
  */
 
 import React, { useState } from 'react';
@@ -23,7 +23,7 @@ import {
   AdjustmentType,
   HistoryStep,
   Point,
-} from '../types/photoshop';
+} from '../types/imagemate';
 
 interface RightDockProps {
   document: DocumentProject;

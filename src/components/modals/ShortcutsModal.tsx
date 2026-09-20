@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Keyboard Shortcuts Reference Cheat Sheet
+ * ImageMate Studio - Keyboard Shortcuts Reference Cheat Sheet
  */
 
 import React from 'react';
@@ -75,7 +75,7 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
         <div className="px-4 py-3 bg-[#1e1e1e] border-b border-[#333333] flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Keyboard size={16} className="text-[#00c8ff]" />
-            <span className="font-bold text-sm text-white">Photoshop Keyboard Shortcuts</span>
+            <span className="font-bold text-sm text-white">ImageMate Keyboard Shortcuts</span>
           </div>
           <button
             onClick={onClose}

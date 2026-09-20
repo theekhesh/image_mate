@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - Properties Inspector Panel
+ * ImageMate Studio - Properties Inspector Panel
  */
 
 import React from 'react';
-import { Layer } from '../../types/photoshop';
+import { Layer } from '../../types/imagemate';
 import {
   AlignLeft,
   AlignCenter,

@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - Quick Export As Modal
+ * ImageMate Studio - Quick Export As Modal
  */
 
 import React, { useState } from 'react';
-import { DocumentProject } from '../../types/photoshop';
+import { DocumentProject } from '../../types/imagemate';
 import { FileExporter } from '../../utils/fileExporter';
 import { Download, X, FileImage, Layers } from 'lucide-react';
 

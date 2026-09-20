@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Left Tool Strip (Photoshop Palette)
+ * ImageMate Studio - Left Tool Strip (ImageMate Palette)
  */
 
 import React, { useState } from 'react';
@@ -32,7 +32,7 @@ import {
   RefreshCw,
   LucideIcon,
 } from 'lucide-react';
-import { ToolType } from '../types/photoshop';
+import { ToolType } from '../types/imagemate';
 
 interface ToolbarProps {
   activeTool: ToolType;

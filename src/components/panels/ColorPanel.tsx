@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Color & Swatches Panel
+ * ImageMate Studio - Color & Swatches Panel
  */
 
 import React, { useState } from 'react';

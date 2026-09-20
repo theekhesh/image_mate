@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Interactive Main Canvas Stage & Viewport
+ * ImageMate Studio - Interactive Main Canvas Stage & Viewport
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
@@ -10,9 +10,11 @@ import {
   ToolOptions,
   Point,
   SelectionMask,
-} from '../types/photoshop';
+  Guide,
+} from '../types/imagemate';
 import { CanvasRenderer } from '../utils/canvasRenderer';
 import { FilterEngine } from '../utils/filterEngine';
+import { Rulers } from './Rulers';
 
 interface CanvasStageProps {
   document: DocumentProject;
@@ -28,6 +30,7 @@ interface CanvasStageProps {
   onSampleColor: (hex: string) => void;
   onSelectLayer: (id: string) => void;
   onPushHistory: (name: string) => void;
+  onAddGuide?: (guide: Guide) => void;
 }
 
 export const CanvasStage: React.FC<CanvasStageProps> = ({
@@ -44,9 +47,13 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
   onSampleColor,
   onSelectLayer,
   onPushHistory,
+  onAddGuide,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Cursor tracking for rulers and info overlay
+  const [cursorDocPos, setCursorDocPos] = useState<Point | null>(null);
 
   // Interaction State
   const [isInteracting, setIsInteracting] = useState(false);
@@ -338,7 +345,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
         y: Math.round(docPt.y),
         width: 320,
         height: 60,
-        text: 'Photoshop Typography',
+        text: 'ImageMate Typography',
         fontFamily: toolOptions.fontFamily || 'Inter, sans-serif',
         fontSize: toolOptions.fontSize || 36,
         textColor: fgColor,
@@ -351,6 +358,9 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
   // Mouse Move Event Handler
   const handleMouseMove = (e: React.MouseEvent) => {
+    const docPt = screenToDoc(e.clientX, e.clientY);
+    setCursorDocPos(docPt);
+
     if (!isInteracting) return;
 
     if (activeTool === 'hand' || e.altKey || dragStart === null) {
@@ -362,7 +372,6 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       return;
     }
 
-    const docPt = screenToDoc(e.clientX, e.clientY);
     setDragCurrent(docPt);
 
     // Move / Transform Layer
@@ -538,10 +547,11 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
   return (
     <div
       ref={containerRef}
-      id="photoshop-canvas-stage"
+      id="imagemate-canvas-stage"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseLeave={() => setCursorDocPos(null)}
       onWheel={handleWheel}
       className="flex-1 h-full bg-[#181818] relative overflow-hidden select-none flex items-center justify-center cursor-default"
       style={{
@@ -557,30 +567,14 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
             : 'crosshair',
       }}
     >
-      {/* Top Pixel Ruler */}
-      {doc.showRulers && (
-        <div className="absolute top-0 left-0 right-0 h-4 bg-[#252526] border-b border-[#333333] z-20 flex items-center text-[9px] text-gray-400 font-mono pl-4 pointer-events-none">
-          <span>0px</span>
-          <span className="ml-24">200px</span>
-          <span className="ml-24">400px</span>
-          <span className="ml-24">600px</span>
-          <span className="ml-24">800px</span>
-          <span className="ml-24">1000px</span>
-          <span className="ml-24">1200px</span>
-          <span className="ml-24">1400px</span>
-        </div>
-      )}
-
-      {/* Left Pixel Ruler */}
-      {doc.showRulers && (
-        <div className="absolute top-0 bottom-0 left-0 w-4 bg-[#252526] border-r border-[#333333] z-20 flex flex-col items-center text-[8px] text-gray-400 font-mono pt-4 pointer-events-none">
-          <span>0</span>
-          <span className="mt-16">200</span>
-          <span className="mt-16">400</span>
-          <span className="mt-16">600</span>
-          <span className="mt-16">800</span>
-        </div>
-      )}
+      {/* Horizontal & Vertical Pixel Rulers */}
+      <Rulers
+        doc={doc}
+        containerRef={containerRef}
+        mousePos={cursorDocPos}
+        onAddGuide={onAddGuide}
+        onResetPan={() => onSetPan({ x: 0, y: 0 })}
+      />
 
       {/* Document Viewport Wrapper with Pan & Zoom Transform */}
       <div
@@ -608,6 +602,14 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
         <span className="text-cyan-400 font-semibold">{Math.round(doc.zoom * 100)}%</span>
         <span className="text-gray-500">|</span>
         <span>{doc.layers.length} Layers</span>
+        {cursorDocPos && (
+          <>
+            <span className="text-gray-500">|</span>
+            <span className="text-gray-300">
+              X: {Math.round(cursorDocPos.x)} Y: {Math.round(cursorDocPos.y)} px
+            </span>
+          </>
+        )}
       </div>
     </div>
   );

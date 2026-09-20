@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - Navigator Minimap & Live Histogram Panel
+ * ImageMate Studio - Navigator Minimap & Live Histogram Panel
  */
 
 import React, { useRef, useEffect } from 'react';
-import { DocumentProject } from '../../types/photoshop';
+import { DocumentProject } from '../../types/imagemate';
 import { CanvasRenderer } from '../../utils/canvasRenderer';
 import { FilterEngine } from '../../utils/filterEngine';
 import { ZoomIn, ZoomOut, Compass } from 'lucide-react';

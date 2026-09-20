@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Top Menu Bar & Document Tabs
+ * ImageMate Studio - Top Menu Bar & Document Tabs
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -29,7 +29,7 @@ import {
   FlipHorizontal,
   FlipVertical,
 } from 'lucide-react';
-import { DocumentProject, AdjustmentType } from '../types/photoshop';
+import { DocumentProject, AdjustmentType } from '../types/imagemate';
 import { FileExporter } from '../utils/fileExporter';
 
 interface TopMenuBarProps {
@@ -192,12 +192,12 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
     <div ref={menuRef} className="bg-[#202020] border-b border-[#2d2d2d] select-none text-xs text-[#cccccc]">
       {/* Upper Bar: Logo + Menus + Action Shortcuts */}
       <div className="flex items-center justify-between px-2 h-8">
-        {/* Left: Photoshop Web Studio Brand + Menu List */}
+        {/* Left: ImageMate Studio Brand + Menu List */}
         <div className="flex items-center gap-1">
-          {/* Photoshop Brand Badge */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 mr-2 rounded bg-[#001e36] border border-[#007acc] text-[#00c8ff] font-bold text-xs shadow-sm">
-            <span className="font-extrabold text-[13px] tracking-tight">Ps</span>
-            <span className="text-[10px] text-gray-300 font-medium hidden sm:inline">Web Studio</span>
+          {/* ImageMate Brand Badge */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 mr-2 rounded bg-[#002233] border border-[#0099cc] text-[#00d4ff] font-bold text-xs shadow-sm">
+            <span className="font-extrabold text-[13px] tracking-tight">Im</span>
+            <span className="text-[10px] text-gray-300 font-medium hidden sm:inline">ImageMate</span>
           </div>
 
           {/* File Menu */}
@@ -646,7 +646,14 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                   onClick={() => closeAndRun(onToggleRulers)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
-                  <span>{activeDoc?.rulersVisible ? '✓ ' : '  '}Rulers</span>
+                  <span>
+                    {(showRulers !== undefined
+                      ? showRulers
+                      : (activeDoc?.showRulers ?? activeDoc?.rulersVisible))
+                      ? '✓ '
+                      : '  '}
+                    Rulers
+                  </span>
                   <span className="text-[10px] text-gray-400">Ctrl+R</span>
                 </button>
                 <button
@@ -680,11 +687,11 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                   onClick={() => closeAndRun(onOpenShortcuts)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
-                  <span className="flex items-center gap-2"><Keyboard size={14} /> Photoshop Shortcuts</span>
+                  <span className="flex items-center gap-2"><Keyboard size={14} /> ImageMate Shortcuts</span>
                   <span className="text-[10px] text-gray-400">F1</span>
                 </button>
                 <div className="px-3 py-2 text-[11px] text-gray-400 border-t border-[#3e3e42] mt-1">
-                  Photoshop Web Studio v2.4 (Web & Linux Desktop Edition)
+                  ImageMate Studio v2.4 (Web & Linux Desktop Edition)
                 </div>
               </div>
             )}

@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Context-Sensitive Tool Options Bar
+ * ImageMate Studio - Context-Sensitive Tool Options Bar
  */
 
 import React from 'react';
@@ -9,7 +9,7 @@ import {
   Layer,
   ShapeType,
   ToolOptions,
-} from '../types/photoshop';
+} from '../types/imagemate';
 import {
   AlignLeft,
   AlignCenter,

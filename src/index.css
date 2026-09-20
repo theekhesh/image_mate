@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @layer utilities {
-  /* Custom Photoshop checkerboard pattern for transparent canvases */
+  /* Custom ImageMate checkerboard pattern for transparent canvases */
   .bg-checkerboard {
     background-color: #ffffff;
     background-image: linear-gradient(45deg, #e5e5e5 25%, transparent 25%),
@@ -38,7 +38,7 @@
   }
 }
 
-/* Custom Photoshop UI scrollbars */
+/* Custom ImageMate UI scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - Filter Gallery Studio Modal
+ * ImageMate Studio - Filter Gallery Studio Modal
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Layer } from '../../types/photoshop';
+import { Layer } from '../../types/imagemate';
 import { FilterEngine } from '../../utils/filterEngine';
 import { Sparkles, X, Check, Eye } from 'lucide-react';
 

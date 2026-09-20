@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Main Application Orchestrator
+ * ImageMate Studio - Main Application Orchestrator
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -12,7 +12,7 @@ import {
   HistoryStep,
   Point,
   LayerEffects,
-} from './types/photoshop';
+} from './types/imagemate';
 import {
   createCyberpunkProject,
   createBrandProject,
@@ -518,6 +518,16 @@ export const App: React.FC = () => {
         return;
       }
 
+      // Toggle Rulers: Ctrl+R / Cmd+R
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        setDoc((prev) => {
+          const nextVal = !(prev.showRulers ?? prev.rulersVisible);
+          return { ...prev, showRulers: nextVal, rulersVisible: nextVal };
+        });
+        return;
+      }
+
       // Delete Layer: Del or Backspace
       if (e.key === 'Delete' && activeLayerId) {
         e.preventDefault();
@@ -562,7 +572,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col w-screen h-screen bg-[#1e1e1e] text-[#cccccc] font-sans overflow-hidden select-none">
-      {/* 1. Top Photoshop Menu Bar */}
+      {/* 1. Top ImageMate Menu Bar */}
       <TopMenuBar
         projectName={doc.title}
         zoomLevel={doc.zoom}
@@ -594,7 +604,12 @@ export const App: React.FC = () => {
           setActiveAdjModalType(type);
           setIsAdjustmentsOpen(true);
         }}
-        onToggleRulers={() => setDoc((prev) => ({ ...prev, showRulers: !prev.showRulers }))}
+        onToggleRulers={() =>
+          setDoc((prev) => {
+            const nextVal = !(prev.showRulers ?? prev.rulersVisible);
+            return { ...prev, showRulers: nextVal, rulersVisible: nextVal };
+          })
+        }
         onToggleGrid={() => setDoc((prev) => ({ ...prev, showGrid: !prev.showGrid }))}
         onZoomIn={() => setDoc((prev) => ({ ...prev, zoom: Math.min(5, prev.zoom * 1.25) }))}
         onZoomOut={() => setDoc((prev) => ({ ...prev, zoom: Math.max(0.1, prev.zoom * 0.8) }))}
@@ -617,7 +632,7 @@ export const App: React.FC = () => {
 
       {/* 3. Main Workspace Area: Left Toolbar + Canvas Viewport + Right Panels */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Photoshop Toolbar */}
+        {/* Left ImageMate Toolbar */}
         <Toolbar
           activeTool={activeTool}
           onSelectTool={setActiveTool}
@@ -651,6 +666,10 @@ export const App: React.FC = () => {
           onSampleColor={(hex) => setFgColor(hex)}
           onSelectLayer={setActiveLayerId}
           onPushHistory={pushHistory}
+          onAddGuide={(guide) => {
+            setDoc((prev) => ({ ...prev, guides: [...(prev.guides || []), guide] }));
+            pushHistory(`Add ${guide.orientation} guide`);
+          }}
         />
 
         {/* Right Dockable Palettes (Layers, Color, Navigator, Properties, History, Adjustments) */}

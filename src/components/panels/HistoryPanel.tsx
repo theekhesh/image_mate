@@ -1,9 +1,9 @@
 /**
- * Photoshop Web Studio - History & Snapshots Panel
+ * ImageMate Studio - History & Snapshots Panel
  */
 
 import React from 'react';
-import { HistoryStep } from '../../types/photoshop';
+import { HistoryStep } from '../../types/imagemate';
 import { History, Camera, CornerUpLeft } from 'lucide-react';
 
 interface HistoryPanelProps {

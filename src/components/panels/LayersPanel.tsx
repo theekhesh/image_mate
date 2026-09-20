@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Layers & Blend Modes Panel
+ * ImageMate Studio - Layers & Blend Modes Panel
  */
 
 import React, { useState } from 'react';
@@ -7,7 +7,7 @@ import {
   Layer,
   BlendMode,
   AdjustmentType,
-} from '../../types/photoshop';
+} from '../../types/imagemate';
 import {
   Eye,
   EyeOff,

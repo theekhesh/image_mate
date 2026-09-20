@@ -1,8 +1,8 @@
 /**
- * Photoshop Web Studio - Built-in Sample Projects and Presets
+ * ImageMate Studio - Built-in Sample Projects and Presets
  */
 
-import { DocumentProject, Layer } from '../types/photoshop';
+import { DocumentProject, Layer } from '../types/imagemate';
 
 export const CANVAS_PRESETS = [
   {

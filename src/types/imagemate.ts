@@ -1,5 +1,5 @@
 /**
- * Photoshop Web Studio - Core Types & Interfaces
+ * ImageMate Studio - Core Types & Interfaces
  */
 
 export type BlendMode =
