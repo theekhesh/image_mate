@@ -183,9 +183,11 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
     }
   };
 
-  const closeAndRun = (action: () => void) => {
+  const closeAndRun = (action?: () => void) => {
     setActiveMenu(null);
-    action();
+    if (action) {
+      action();
+    }
   };
 
   return (
@@ -216,7 +218,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
               <div className="absolute left-0 top-full mt-0.5 w-56 bg-[#252526] border border-[#3e3e42] rounded-md shadow-2xl py-1 z-50 text-xs">
                 <button
                   id="menu-file-new"
-                  onClick={() => closeAndRun(onNewDoc)}
+                  onClick={() => closeAndRun(handleNewDoc)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span className="flex items-center gap-2"><Plus size={14} /> New Document...</span>
@@ -224,7 +226,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 </button>
                 <button
                   id="menu-file-open"
-                  onClick={() => closeAndRun(onOpenImage)}
+                  onClick={() => closeAndRun(handleOpenImage)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span className="flex items-center gap-2"><FolderOpen size={14} /> Open Image...</span>
@@ -241,7 +243,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 </button>
                 <button
                   id="menu-file-export"
-                  onClick={() => closeAndRun(onExport)}
+                  onClick={() => closeAndRun(handleExport)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span className="flex items-center gap-2"><Download size={14} /> Quick Export As...</span>
@@ -250,7 +252,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 <div className="h-px bg-[#3e3e42] my-1" />
                 <button
                   id="menu-file-close"
-                  onClick={() => closeAndRun(() => activeDocId && onCloseDoc(activeDocId))}
+                  onClick={() => closeAndRun(() => currentDocId && onCloseDoc?.(currentDocId))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span className="flex items-center gap-2"><X size={14} /> Close Document</span>
@@ -342,7 +344,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
               <div className="absolute left-0 top-full mt-0.5 w-60 bg-[#252526] border border-[#3e3e42] rounded-md shadow-2xl py-1 z-50 text-xs">
                 <button
                   id="menu-img-ai-auto"
-                  onClick={() => closeAndRun(onAIEnhance)}
+                  onClick={() => closeAndRun(handleAI)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center text-cyan-300 font-medium"
                 >
                   <span className="flex items-center gap-2"><Sparkles size={14} /> AI Auto-Enhance</span>
@@ -352,14 +354,14 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 <div className="px-3 py-1 text-[10px] uppercase font-semibold text-gray-400">Adjustments</div>
                 <button
                   id="menu-img-adj-bc"
-                  onClick={() => closeAndRun(() => onOpenAdjustment('brightness-contrast'))}
+                  onClick={() => closeAndRun(() => handleAdj('brightness-contrast'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white"
                 >
                   Brightness / Contrast...
                 </button>
                 <button
                   id="menu-img-adj-hs"
-                  onClick={() => closeAndRun(() => onOpenAdjustment('hue-saturation'))}
+                  onClick={() => closeAndRun(() => handleAdj('hue-saturation'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span>Hue / Saturation...</span>
@@ -367,7 +369,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 </button>
                 <button
                   id="menu-img-adj-levels"
-                  onClick={() => closeAndRun(() => onOpenAdjustment('levels'))}
+                  onClick={() => closeAndRun(() => handleAdj('levels'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span>Levels...</span>
@@ -375,7 +377,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 </button>
                 <button
                   id="menu-img-adj-curves"
-                  onClick={() => closeAndRun(() => onOpenAdjustment('curves'))}
+                  onClick={() => closeAndRun(() => handleAdj('curves'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span>Curves...</span>
@@ -383,7 +385,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 </button>
                 <button
                   id="menu-img-adj-cb"
-                  onClick={() => closeAndRun(() => onOpenAdjustment('color-balance'))}
+                  onClick={() => closeAndRun(() => handleAdj('color-balance'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span>Color Balance...</span>
@@ -391,14 +393,14 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 </button>
                 <button
                   id="menu-img-adj-bw"
-                  onClick={() => closeAndRun(() => onOpenAdjustment('black-white'))}
+                  onClick={() => closeAndRun(() => handleAdj('black-white'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white"
                 >
                   Black & White...
                 </button>
                 <button
                   id="menu-img-adj-invert"
-                  onClick={() => closeAndRun(() => onOpenAdjustment('invert'))}
+                  onClick={() => closeAndRun(() => handleAdj('invert'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span>Invert</span>
@@ -407,28 +409,28 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 <div className="h-px bg-[#3e3e42] my-1" />
                 <button
                   id="menu-img-canvas-size"
-                  onClick={() => closeAndRun(onOpenCanvasSize)}
+                  onClick={() => closeAndRun(() => onOpenCanvasSize?.('canvas'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white"
                 >
                   Canvas Size / Resample...
                 </button>
                 <button
                   id="menu-img-rot-90"
-                  onClick={() => closeAndRun(() => onRotateCanvas(90))}
+                  onClick={() => closeAndRun(() => onRotateCanvas?.(90))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span className="flex items-center gap-2"><RotateCw size={14} /> Rotate 90° Clockwise</span>
                 </button>
                 <button
                   id="menu-img-flip-h"
-                  onClick={() => closeAndRun(() => onFlipCanvas('h'))}
+                  onClick={() => closeAndRun(() => onFlipCanvas?.('h'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span className="flex items-center gap-2"><FlipHorizontal size={14} /> Flip Canvas Horizontal</span>
                 </button>
                 <button
                   id="menu-img-flip-v"
-                  onClick={() => closeAndRun(() => onFlipCanvas('v'))}
+                  onClick={() => closeAndRun(() => onFlipCanvas?.('v'))}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span className="flex items-center gap-2"><FlipVertical size={14} /> Flip Canvas Vertical</span>
@@ -453,7 +455,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
               <div className="absolute left-0 top-full mt-0.5 w-56 bg-[#252526] border border-[#3e3e42] rounded-md shadow-2xl py-1 z-50 text-xs">
                 <button
                   id="menu-layer-new"
-                  onClick={() => closeAndRun(onAddLayer)}
+                  onClick={() => closeAndRun(handleAddL)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
                   <span className="flex items-center gap-2"><Plus size={14} /> New Layer</span>
@@ -703,7 +705,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
           {/* AI Auto-Enhance quick button */}
           <button
             id="quick-btn-ai-enhance"
-            onClick={onAIEnhance}
+            onClick={handleAI}
             title="Smart AI Auto Retouch & Dynamic Tone Mapping"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gradient-to-r from-[#007acc] to-[#00a8ff] text-white text-[11px] font-medium shadow hover:brightness-110 active:scale-95 transition-all"
           >
@@ -714,7 +716,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
           {/* Quick Export Button */}
           <button
             id="quick-btn-export"
-            onClick={onExport}
+            onClick={handleExport}
             className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#333333] hover:bg-[#404040] text-gray-200 text-[11px] font-medium border border-[#444444] transition-colors"
           >
             <Download size={13} />

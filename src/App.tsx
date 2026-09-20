@@ -83,6 +83,8 @@ export const App: React.FC = () => {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isCanvasSizeOpen, setIsCanvasSizeOpen] = useState(false);
   const [canvasSizeMode, setCanvasSizeMode] = useState<'canvas' | 'image'>('canvas');
+  const [cropRatio, setCropRatio] = useState<string>('free');
+  const [gradientType, setGradientType] = useState<'linear' | 'radial' | 'reflected' | 'diamond'>('linear');
 
   // Active layer shortcut
   const activeLayer = doc.layers.find((l) => l.id === activeLayerId) || null;
@@ -472,6 +474,229 @@ export const App: React.FC = () => {
     pushHistory(`${mode === 'canvas' ? 'Canvas' : 'Image'} Size Resample`);
   };
 
+  // Crop Entire Document
+  const handleCropDocument = (bounds: { x: number; y: number; width: number; height: number }) => {
+    const w = Math.round(bounds.width);
+    const h = Math.round(bounds.height);
+    if (w < 10 || h < 10) return;
+
+    const newLayers = doc.layers.map((layer) => {
+      let newCanvas = layer.canvas;
+      if (layer.canvas) {
+        newCanvas = document.createElement('canvas');
+        newCanvas.width = layer.canvas.width;
+        newCanvas.height = layer.canvas.height;
+        const ctx = newCanvas.getContext('2d');
+        if (ctx) ctx.drawImage(layer.canvas, 0, 0);
+      }
+      return {
+        ...layer,
+        x: Math.round(layer.x - bounds.x),
+        y: Math.round(layer.y - bounds.y),
+        canvas: newCanvas,
+      };
+    });
+
+    const updatedDoc: DocumentProject = {
+      ...doc,
+      width: w,
+      height: h,
+      layers: newLayers,
+      selection: null,
+    };
+    setDoc(updatedDoc);
+    pushHistory('Crop Canvas', updatedDoc);
+  };
+
+  // Rotate Entire Canvas
+  const handleRotateCanvas = (angleDeg: 90 | 180 | 270) => {
+    const rad = (angleDeg * Math.PI) / 180;
+    const isSwap = angleDeg === 90 || angleDeg === 270;
+    const newW = isSwap ? doc.height : doc.width;
+    const newH = isSwap ? doc.width : doc.height;
+
+    const newLayers = doc.layers.map((layer) => {
+      let newCanvas = layer.canvas;
+      if (layer.canvas) {
+        newCanvas = document.createElement('canvas');
+        newCanvas.width = isSwap ? layer.canvas.height : layer.canvas.width;
+        newCanvas.height = isSwap ? layer.canvas.width : layer.canvas.height;
+        const c = newCanvas.getContext('2d');
+        if (c) {
+          c.translate(newCanvas.width / 2, newCanvas.height / 2);
+          c.rotate(rad);
+          c.drawImage(layer.canvas, -layer.canvas.width / 2, -layer.canvas.height / 2);
+        }
+      }
+      let newX = layer.x;
+      let newY = layer.y;
+      if (angleDeg === 90) {
+        newX = doc.height - (layer.y + layer.height);
+        newY = layer.x;
+      } else if (angleDeg === 180) {
+        newX = doc.width - (layer.x + layer.width);
+        newY = doc.height - (layer.y + layer.height);
+      } else if (angleDeg === 270) {
+        newX = layer.y;
+        newY = doc.width - (layer.x + layer.width);
+      }
+      return {
+        ...layer,
+        x: Math.round(newX),
+        y: Math.round(newY),
+        width: isSwap ? layer.height : layer.width,
+        height: isSwap ? layer.width : layer.height,
+        canvas: newCanvas,
+      };
+    });
+
+    const updatedDoc: DocumentProject = {
+      ...doc,
+      width: newW,
+      height: newH,
+      layers: newLayers,
+      selection: null,
+    };
+    setDoc(updatedDoc);
+    pushHistory(`Rotate Canvas ${angleDeg}°`, updatedDoc);
+  };
+
+  // Flip Canvas Horizontally / Vertically
+  const handleFlipCanvas = (dir: 'h' | 'v') => {
+    const newLayers = doc.layers.map((layer) => {
+      let newCanvas = layer.canvas;
+      if (layer.canvas) {
+        newCanvas = document.createElement('canvas');
+        newCanvas.width = layer.canvas.width;
+        newCanvas.height = layer.canvas.height;
+        const c = newCanvas.getContext('2d');
+        if (c) {
+          if (dir === 'h') {
+            c.translate(newCanvas.width, 0);
+            c.scale(-1, 1);
+          } else {
+            c.translate(0, newCanvas.height);
+            c.scale(1, -1);
+          }
+          c.drawImage(layer.canvas, 0, 0);
+        }
+      }
+      const newX = dir === 'h' ? doc.width - (layer.x + layer.width) : layer.x;
+      const newY = dir === 'v' ? doc.height - (layer.y + layer.height) : layer.y;
+      return {
+        ...layer,
+        x: Math.round(newX),
+        y: Math.round(newY),
+        canvas: newCanvas,
+      };
+    });
+
+    const updatedDoc: DocumentProject = {
+      ...doc,
+      layers: newLayers,
+      selection: null,
+    };
+    setDoc(updatedDoc);
+    pushHistory(`Flip Canvas ${dir === 'h' ? 'Horizontal' : 'Vertical'}`, updatedDoc);
+  };
+
+  // Select All Canvas Area
+  const handleSelectAll = () => {
+    setDoc((prev) => ({
+      ...prev,
+      selection: {
+        active: true,
+        type: 'rect',
+        bounds: { x: 0, y: 0, width: prev.width, height: prev.height },
+        points: [],
+        feather: 0,
+      },
+    }));
+    pushHistory('Select All');
+  };
+
+  // Clear / Deselect Selection
+  const handleDeselect = () => {
+    setDoc((prev) => ({ ...prev, selection: null }));
+    pushHistory('Deselect');
+  };
+
+  // Invert Selection Bounds
+  const handleInvertSelection = () => {
+    setDoc((prev) => {
+      if (!prev.selection) return prev;
+      return {
+        ...prev,
+        selection: {
+          ...prev.selection,
+          bounds: { x: 0, y: 0, width: prev.width, height: prev.height },
+        },
+      };
+    });
+    pushHistory('Invert Selection');
+  };
+
+  // Delete Selection or Active Layer
+  const handleDeleteSelection = () => {
+    if (doc.selection && doc.selection.active && activeLayer && activeLayer.canvas) {
+      const ctx = activeLayer.canvas.getContext('2d');
+      if (ctx) {
+        const b = doc.selection.bounds;
+        const localX = b.x - activeLayer.x;
+        const localY = b.y - activeLayer.y;
+        ctx.save();
+        if (doc.selection.type === 'ellipse') {
+          ctx.beginPath();
+          ctx.ellipse(
+            localX + b.width / 2,
+            localY + b.height / 2,
+            b.width / 2,
+            b.height / 2,
+            0,
+            0,
+            Math.PI * 2
+          );
+          ctx.clip();
+          ctx.clearRect(localX, localY, b.width, b.height);
+        } else if (doc.selection.points && doc.selection.points.length > 2) {
+          ctx.beginPath();
+          ctx.moveTo(doc.selection.points[0].x - activeLayer.x, doc.selection.points[0].y - activeLayer.y);
+          for (let i = 1; i < doc.selection.points.length; i++) {
+            ctx.lineTo(doc.selection.points[i].x - activeLayer.x, doc.selection.points[i].y - activeLayer.y);
+          }
+          ctx.closePath();
+          ctx.clip();
+          ctx.clearRect(localX, localY, b.width, b.height);
+        } else {
+          ctx.clearRect(localX, localY, b.width, b.height);
+        }
+        ctx.restore();
+        handleUpdateLayer(activeLayer.id, { canvas: activeLayer.canvas });
+        pushHistory('Clear Selection');
+        return;
+      }
+    }
+    if (activeLayerId) {
+      handleDeleteLayer(activeLayerId);
+    }
+  };
+
+  // Align Active Layer within Canvas Bounds
+  const handleAlignLayers = (alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => {
+    if (!activeLayer) return;
+    let newX = activeLayer.x;
+    let newY = activeLayer.y;
+    if (alignment === 'left') newX = 0;
+    else if (alignment === 'center') newX = Math.round((doc.width - activeLayer.width) / 2);
+    else if (alignment === 'right') newX = doc.width - activeLayer.width;
+    else if (alignment === 'top') newY = 0;
+    else if (alignment === 'middle') newY = Math.round((doc.height - activeLayer.height) / 2);
+    else if (alignment === 'bottom') newY = doc.height - activeLayer.height;
+
+    handleUpdateLayer(activeLayer.id, { x: newX, y: newY });
+    pushHistory(`Align ${alignment}`);
+  };
+
   // Global Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -528,10 +753,31 @@ export const App: React.FC = () => {
         return;
       }
 
-      // Delete Layer: Del or Backspace
-      if (e.key === 'Delete' && activeLayerId) {
+      // Delete / Clear: Del or Backspace
+      if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
-        handleDeleteLayer(activeLayerId);
+        handleDeleteSelection();
+        return;
+      }
+
+      // Select All: Ctrl+A
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        handleSelectAll();
+        return;
+      }
+
+      // Deselect: Ctrl+D or Escape
+      if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') || e.key === 'Escape') {
+        e.preventDefault();
+        handleDeselect();
+        return;
+      }
+
+      // Invert Selection: Ctrl+Shift+I
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        handleInvertSelection();
         return;
       }
 
@@ -578,10 +824,18 @@ export const App: React.FC = () => {
         zoomLevel={doc.zoom}
         canUndo={historyIndex > 0}
         canRedo={historyIndex < history.length - 1}
-        showRulers={doc.showRulers}
-        showGrid={doc.showGrid}
+        showRulers={doc.showRulers ?? doc.rulersVisible}
+        showGrid={doc.showGrid ?? doc.gridVisible}
         onNewDocument={() => setIsNewDocOpen(true)}
+        onNewDoc={() => setIsNewDocOpen(true)}
         onOpenDocument={() => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*,.json,.psd';
+          input.onchange = (e) => handleOpenImageFile(e as any);
+          input.click();
+        }}
+        onOpenImage={() => {
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = 'image/*,.json,.psd';
@@ -590,16 +844,18 @@ export const App: React.FC = () => {
         }}
         onSaveProject={() => FileExporter.saveProjectJson(doc)}
         onExportImage={() => setIsExportOpen(true)}
+        onExport={() => setIsExportOpen(true)}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onDuplicateLayer={() => activeLayerId && handleDuplicateLayer(activeLayerId)}
-        onDeleteLayer={() => activeLayerId && handleDeleteLayer(activeLayerId)}
+        onDeleteLayer={handleDeleteSelection}
         onNewLayer={handleAddNewBlankLayer}
         onMergeDown={handleMergeDown}
         onFlattenImage={handleFlattenImage}
         onOpenLayerStyles={() => setIsLayerStylesOpen(true)}
         onOpenFilterGallery={() => setIsFilterGalleryOpen(true)}
         onAutoEnhance={handleAutoEnhance}
+        onAIEnhance={handleAutoEnhance}
         onOpenAdjustments={(type) => {
           setActiveAdjModalType(type);
           setIsAdjustmentsOpen(true);
@@ -610,15 +866,26 @@ export const App: React.FC = () => {
             return { ...prev, showRulers: nextVal, rulersVisible: nextVal };
           })
         }
-        onToggleGrid={() => setDoc((prev) => ({ ...prev, showGrid: !prev.showGrid }))}
+        onToggleGrid={() =>
+          setDoc((prev) => {
+            const nextVal = !(prev.showGrid ?? prev.gridVisible);
+            return { ...prev, showGrid: nextVal, gridVisible: nextVal };
+          })
+        }
         onZoomIn={() => setDoc((prev) => ({ ...prev, zoom: Math.min(5, prev.zoom * 1.25) }))}
         onZoomOut={() => setDoc((prev) => ({ ...prev, zoom: Math.max(0.1, prev.zoom * 0.8) }))}
         onFitScreen={() => setDoc((prev) => ({ ...prev, zoom: 1, pan: { x: 0, y: 0 } }))}
+        onZoom100={() => setDoc((prev) => ({ ...prev, zoom: 1, pan: { x: 0, y: 0 } }))}
         onOpenShortcuts={() => setIsShortcutsOpen(true)}
         onOpenCanvasSize={(mode) => {
           setCanvasSizeMode(mode);
           setIsCanvasSizeOpen(true);
         }}
+        onRotateCanvas={handleRotateCanvas}
+        onFlipCanvas={handleFlipCanvas}
+        onSelectAll={handleSelectAll}
+        onDeselect={handleDeselect}
+        onInvertSelection={handleInvertSelection}
       />
 
       {/* 2. Tool Options Header Bar */}
@@ -628,6 +895,17 @@ export const App: React.FC = () => {
         onOptionsChange={(updates) => setToolOptions((prev) => ({ ...prev, ...updates }))}
         activeLayer={activeLayer}
         onUpdateLayer={(updates) => activeLayerId && handleUpdateLayer(activeLayerId, updates)}
+        fgColor={fgColor}
+        bgColor={bgColor}
+        onChangeFgColor={setFgColor}
+        cropRatio={cropRatio}
+        onChangeCropRatio={setCropRatio}
+        gradientType={gradientType}
+        onChangeGradientType={setGradientType}
+        onAlignLayers={handleAlignLayers}
+        zoomLevel={Math.round(doc.zoom * 100)}
+        onSetZoom={(zoom) => setDoc((prev) => ({ ...prev, zoom }))}
+        onFitScreen={() => setDoc((prev) => ({ ...prev, zoom: 1, pan: { x: 0, y: 0 } }))}
       />
 
       {/* 3. Main Workspace Area: Left Toolbar + Canvas Viewport + Right Panels */}
@@ -670,6 +948,10 @@ export const App: React.FC = () => {
             setDoc((prev) => ({ ...prev, guides: [...(prev.guides || []), guide] }));
             pushHistory(`Add ${guide.orientation} guide`);
           }}
+          onSetSelection={(sel) => setDoc((prev) => ({ ...prev, selection: sel }))}
+          onCropDocument={handleCropDocument}
+          cropRatio={cropRatio}
+          gradientType={gradientType}
         />
 
         {/* Right Dockable Palettes (Layers, Color, Navigator, Properties, History, Adjustments) */}
@@ -766,6 +1048,13 @@ export const App: React.FC = () => {
                 adjusted = FilterEngine.applyPosterize(imgData, Number(params.posterizeLevels || 4));
               } else if (activeAdjModalType === 'threshold') {
                 adjusted = FilterEngine.applyThreshold(imgData, Number(params.threshold || 128));
+              } else if (activeAdjModalType === 'color-balance') {
+                adjusted = FilterEngine.applyColorBalance(
+                  imgData,
+                  Number(params.cyanRed || 0),
+                  Number(params.magentaGreen || 0),
+                  Number(params.yellowBlue || 0)
+                );
               }
 
               ctx.putImageData(adjusted, 0, 0);

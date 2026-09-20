@@ -131,7 +131,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
           <div className="flex items-center gap-0.5 bg-[#1e1e1e] p-0.5 rounded border border-[#3e3e42]">
             <button
               id="align-left-btn"
-              onClick={() => onAlignLayers('left')}
+              onClick={() => onAlignLayers?.('left')}
               title="Align Left Edges"
               className="p-1 hover:bg-[#333333] rounded text-gray-300 hover:text-white"
             >
@@ -139,7 +139,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             </button>
             <button
               id="align-center-btn"
-              onClick={() => onAlignLayers('center')}
+              onClick={() => onAlignLayers?.('center')}
               title="Align Horizontal Centers"
               className="p-1 hover:bg-[#333333] rounded text-gray-300 hover:text-white"
             >
@@ -147,7 +147,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             </button>
             <button
               id="align-right-btn"
-              onClick={() => onAlignLayers('right')}
+              onClick={() => onAlignLayers?.('right')}
               title="Align Right Edges"
               className="p-1 hover:bg-[#333333] rounded text-gray-300 hover:text-white"
             >
@@ -264,7 +264,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
               min="0"
               max="100"
               value={marqueeFeather}
-              onChange={(e) => onChangeMarqueeFeather(Math.max(0, Number(e.target.value)))}
+              onChange={(e) => onChangeMarqueeFeather?.(Math.max(0, Number(e.target.value)))}
               className="w-14 bg-[#1e1e1e] border border-[#3e3e42] rounded px-1.5 py-0.5 text-center font-mono"
             />
             <span>px</span>
@@ -287,7 +287,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
               min="0"
               max="255"
               value={magicTolerance}
-              onChange={(e) => onChangeMagicTolerance(Number(e.target.value))}
+              onChange={(e) => onChangeMagicTolerance?.(Number(e.target.value))}
               className="w-14 bg-[#1e1e1e] border border-[#3e3e42] rounded px-1.5 py-0.5 text-center font-mono"
             />
           </div>
@@ -310,7 +310,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             <select
               id="crop-ratio-select"
               value={cropRatio}
-              onChange={(e) => onChangeCropRatio(e.target.value)}
+              onChange={(e) => onChangeCropRatio?.(e.target.value)}
               className="bg-[#1e1e1e] border border-[#3e3e42] rounded px-2 py-0.5 text-xs text-white"
             >
               <option value="free">Freeform Unconstrained</option>
@@ -360,7 +360,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             <select
               id="gradient-type-select"
               value={gradientType}
-              onChange={(e) => onChangeGradientType(e.target.value as any)}
+              onChange={(e) => onChangeGradientType?.(e.target.value as any)}
               className="bg-[#1e1e1e] border border-[#3e3e42] rounded px-2 py-0.5 text-xs text-white"
             >
               <option value="linear">Linear Gradient</option>
@@ -381,7 +381,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             <select
               id="text-font-select"
               value={activeLayer?.fontFamily || 'Inter, sans-serif'}
-              onChange={(e) => onUpdateLayer({ fontFamily: e.target.value })}
+              onChange={(e) => onUpdateLayer?.({ fontFamily: e.target.value })}
               className="bg-[#1e1e1e] border border-[#3e3e42] rounded px-2 py-0.5 text-xs text-white w-32 truncate"
             >
               <option value="Inter, sans-serif">Inter</option>
@@ -404,7 +404,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
               min="8"
               max="300"
               value={activeLayer?.fontSize || 48}
-              onChange={(e) => onUpdateLayer({ fontSize: Number(e.target.value) })}
+              onChange={(e) => onUpdateLayer?.({ fontSize: Number(e.target.value) })}
               className="w-14 bg-[#1e1e1e] border border-[#3e3e42] rounded px-1.5 py-0.5 text-center font-mono"
             />
             <span>pt</span>
@@ -415,7 +415,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             <button
               id="text-bold-btn"
               onClick={() =>
-                onUpdateLayer({
+                onUpdateLayer?.({
                   fontWeight: activeLayer?.fontWeight === '700' ? '400' : '700',
                 })
               }
@@ -428,7 +428,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             <button
               id="text-italic-btn"
               onClick={() =>
-                onUpdateLayer({
+                onUpdateLayer?.({
                   fontStyle: activeLayer?.fontStyle === 'italic' ? 'normal' : 'italic',
                 })
               }
@@ -444,7 +444,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
           <div className="flex items-center gap-0.5 bg-[#1e1e1e] p-0.5 rounded border border-[#3e3e42]">
             <button
               id="text-align-left"
-              onClick={() => onUpdateLayer({ textAlign: 'left' })}
+              onClick={() => onUpdateLayer?.({ textAlign: 'left' })}
               className={`p-1 rounded ${
                 (activeLayer?.textAlign || 'left') === 'left' ? 'bg-[#007acc] text-white' : 'text-gray-400 hover:text-white'
               }`}
@@ -453,7 +453,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             </button>
             <button
               id="text-align-center"
-              onClick={() => onUpdateLayer({ textAlign: 'center' })}
+              onClick={() => onUpdateLayer?.({ textAlign: 'center' })}
               className={`p-1 rounded ${
                 activeLayer?.textAlign === 'center' ? 'bg-[#007acc] text-white' : 'text-gray-400 hover:text-white'
               }`}
@@ -462,7 +462,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
             </button>
             <button
               id="text-align-right"
-              onClick={() => onUpdateLayer({ textAlign: 'right' })}
+              onClick={() => onUpdateLayer?.({ textAlign: 'right' })}
               className={`p-1 rounded ${
                 activeLayer?.textAlign === 'right' ? 'bg-[#007acc] text-white' : 'text-gray-400 hover:text-white'
               }`}
@@ -479,8 +479,8 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
               type="color"
               value={activeLayer?.textColor || fgColor}
               onChange={(e) => {
-                onUpdateLayer({ textColor: e.target.value });
-                onChangeFgColor(e.target.value);
+                onUpdateLayer?.({ textColor: e.target.value });
+                onChangeFgColor?.(e.target.value);
               }}
               className="w-6 h-6 rounded border border-[#444444] cursor-pointer bg-transparent"
             />
@@ -499,8 +499,8 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
               type="color"
               value={activeLayer?.fillColor || fgColor}
               onChange={(e) => {
-                onUpdateLayer({ fillColor: e.target.value });
-                onChangeFgColor(e.target.value);
+                onUpdateLayer?.({ fillColor: e.target.value });
+                onChangeFgColor?.(e.target.value);
               }}
               className="w-6 h-6 rounded border border-[#444444] cursor-pointer bg-transparent"
             />
@@ -513,7 +513,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
               id="shape-stroke-input"
               type="color"
               value={activeLayer?.strokeColor || '#ffffff'}
-              onChange={(e) => onUpdateLayer({ strokeColor: e.target.value })}
+              onChange={(e) => onUpdateLayer?.({ strokeColor: e.target.value })}
               className="w-6 h-6 rounded border border-[#444444] cursor-pointer bg-transparent"
             />
             <input
@@ -522,7 +522,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
               min="0"
               max="50"
               value={activeLayer?.strokeWidth || 0}
-              onChange={(e) => onUpdateLayer({ strokeWidth: Number(e.target.value) })}
+              onChange={(e) => onUpdateLayer?.({ strokeWidth: Number(e.target.value) })}
               className="w-12 bg-[#1e1e1e] border border-[#3e3e42] rounded px-1.5 py-0.5 text-center font-mono"
             />
             <span>px</span>
@@ -538,7 +538,7 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
                 min="0"
                 max="100"
                 value={activeLayer?.cornerRadius || 16}
-                onChange={(e) => onUpdateLayer({ cornerRadius: Number(e.target.value) })}
+                onChange={(e) => onUpdateLayer?.({ cornerRadius: Number(e.target.value) })}
                 className="w-12 bg-[#1e1e1e] border border-[#3e3e42] rounded px-1.5 py-0.5 text-center font-mono"
               />
               <span>px</span>
@@ -552,21 +552,21 @@ export const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
             <button
-              onClick={() => onSetZoom(zoomLevel * 1.25)}
+              onClick={() => onSetZoom?.(zoomLevel * 1.25)}
               className="flex items-center gap-1 px-2 py-1 bg-[#1e1e1e] hover:bg-[#333333] rounded border border-[#3e3e42]"
             >
               <ZoomIn size={13} />
               <span>Zoom In</span>
             </button>
             <button
-              onClick={() => onSetZoom(zoomLevel / 1.25)}
+              onClick={() => onSetZoom?.(zoomLevel / 1.25)}
               className="flex items-center gap-1 px-2 py-1 bg-[#1e1e1e] hover:bg-[#333333] rounded border border-[#3e3e42]"
             >
               <ZoomOut size={13} />
               <span>Zoom Out</span>
             </button>
             <button
-              onClick={() => onSetZoom(1)}
+              onClick={() => onSetZoom?.(1)}
               className="px-2 py-1 bg-[#1e1e1e] hover:bg-[#333333] rounded border border-[#3e3e42]"
             >
               100%
