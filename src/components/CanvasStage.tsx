@@ -14,6 +14,7 @@ import {
   BrushSettings,
 } from '../types/imagemate';
 import { CanvasRenderer } from '../utils/canvasRenderer';
+import { computeWandSelection } from '../utils/wandEngine';
 import { Rulers } from './Rulers';
 import { Check, X } from 'lucide-react';
 
@@ -65,9 +66,11 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
   // Cursor tracking for rulers and info overlay
   const [cursorDocPos, setCursorDocPos] = useState<Point | null>(null);
+  const [cursorScreenPos, setCursorScreenPos] = useState<{ x: number; y: number } | null>(null);
 
   // Interaction State
   const [isInteracting, setIsInteracting] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
   const [dragStart, setDragStart] = useState<Point | null>(null);
   const [dragCurrent, setDragCurrent] = useState<Point | null>(null);
   const [transformHandle, setTransformHandle] = useState<string | null>(null);
@@ -84,20 +87,156 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
   // Freehand stroke points
   const strokePointsRef = useRef<Point[]>([]);
+  const lastStrokeTimeRef = useRef<number>(0);
+
+  // In-place Text Editing State
+  const [editingTextLayerId, setEditingTextLayerId] = useState<string | null>(null);
+  const [editingTextVal, setEditingTextVal] = useState<string>('');
+  const textInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Active editing text layer
+  const editingTextLayer = doc.layers.find((l) => l.id === editingTextLayerId) || null;
 
   // Active layer shortcut
   const activeLayer = doc.layers.find((l) => l.id === activeLayerId) || null;
 
+  // Commit text editing
+  const commitTextEditing = useCallback(() => {
+    if (!editingTextLayerId) return;
+    const targetLayer = doc.layers.find((l) => l.id === editingTextLayerId);
+    if (targetLayer) {
+      const text = editingTextVal.trim() || 'Text Layer';
+      const dims = CanvasRenderer.measureText(
+        text,
+        targetLayer.fontSize || 36,
+        targetLayer.fontFamily || 'Inter, sans-serif',
+        targetLayer.fontWeight || '600',
+        targetLayer.fontStyle || 'normal',
+        targetLayer.lineHeight || 1.2
+      );
+      onUpdateLayer(editingTextLayerId, {
+        text,
+        width: dims.width,
+        height: dims.height,
+        hiddenForEdit: false,
+      });
+      onPushHistory?.('Edit Text');
+    }
+    setEditingTextLayerId(null);
+  }, [editingTextLayerId, editingTextVal, doc.layers, onUpdateLayer, onPushHistory]);
+
+  // Cancel text editing
+  const cancelTextEditing = useCallback(() => {
+    if (editingTextLayerId) {
+      onUpdateLayer(editingTextLayerId, { hiddenForEdit: false });
+    }
+    setEditingTextLayerId(null);
+  }, [editingTextLayerId, onUpdateLayer]);
+
+  // Start text editing
+  const startTextEditing = useCallback(
+    (layerId: string) => {
+      const target = doc.layers.find((l) => l.id === layerId && l.type === 'text');
+      if (!target) return;
+      onSelectLayer(layerId);
+      setEditingTextLayerId(layerId);
+      setEditingTextVal(target.text || '');
+      onUpdateLayer(layerId, { hiddenForEdit: true });
+      setTimeout(() => {
+        if (textInputRef.current) {
+          textInputRef.current.focus();
+          textInputRef.current.select();
+        }
+      }, 50);
+    },
+    [doc.layers, onSelectLayer, onUpdateLayer]
+  );
+
+  // Auto-commit when switching tool or deselecting layer
+  useEffect(() => {
+    if (activeTool !== 'text' && editingTextLayerId) {
+      commitTextEditing();
+    }
+  }, [activeTool, editingTextLayerId, commitTextEditing]);
+
+  useEffect(() => {
+    if (editingTextLayerId && activeLayerId !== editingTextLayerId) {
+      commitTextEditing();
+    }
+  }, [activeLayerId, editingTextLayerId, commitTextEditing]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setEditingTextVal(val);
+    if (editingTextLayerId) {
+      const targetLayer = doc.layers.find((l) => l.id === editingTextLayerId);
+      if (targetLayer) {
+        const dims = CanvasRenderer.measureText(
+          val || ' ',
+          targetLayer.fontSize || 36,
+          targetLayer.fontFamily || 'Inter, sans-serif',
+          targetLayer.fontWeight || '600',
+          targetLayer.fontStyle || 'normal',
+          targetLayer.lineHeight || 1.2
+        );
+        onUpdateLayer(editingTextLayerId, {
+          text: val,
+          width: dims.width,
+          height: dims.height,
+        });
+      }
+    }
+  };
+
+  const handleTextKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    e.stopPropagation();
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      commitTextEditing();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      commitTextEditing();
+    }
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    const docPt = screenToDoc(e.clientX, e.clientY);
+    const clickedTextLayer = [...doc.layers].reverse().find(
+      (l) =>
+        l.type === 'text' &&
+        l.visible &&
+        !l.locked &&
+        docPt.x >= l.x &&
+        docPt.x <= l.x + l.width &&
+        docPt.y >= l.y &&
+        docPt.y <= l.y + l.height
+    );
+    if (clickedTextLayer) {
+      startTextEditing(clickedTextLayer.id);
+    }
+  };
+
   // Convert client viewport screen coordinates to document canvas pixel coordinates
   const screenToDoc = useCallback(
     (clientX: number, clientY: number): Point => {
+      // Primary: measure direct document canvas bounding rect for 100% pixel-perfect hit-testing
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const docX = ((clientX - rect.left) / rect.width) * doc.width;
+          const docY = ((clientY - rect.top) / rect.height) * doc.height;
+          return { x: docX, y: docY };
+        }
+      }
+
+      // Viewport container geometry fallback
       const container = containerRef.current;
       if (!container) return { x: 0, y: 0 };
       const rect = container.getBoundingClientRect();
       const screenX = clientX - rect.left;
       const screenY = clientY - rect.top;
 
-      // Viewport center
       const centerX = rect.width / 2 + doc.pan.x;
       const centerY = rect.height / 2 + doc.pan.y;
 
@@ -109,20 +248,63 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
       return { x: docX, y: docY };
     },
-    [doc.pan, doc.zoom, doc.width, doc.height]
+    [doc.width, doc.height, doc.pan.x, doc.pan.y, doc.zoom]
   );
 
-  // Ensure active layer has a writable raster canvas
+  // Ensure active layer has a writable raster canvas with full document dimensions
   const getOrCreateRasterCanvas = useCallback(
     (targetLayer: Layer): HTMLCanvasElement => {
-      if (targetLayer.canvas) return targetLayer.canvas;
+      const minW = Math.max(targetLayer.width || 0, doc.width);
+      const minH = Math.max(targetLayer.height || 0, doc.height);
+
+      if (targetLayer.canvas) {
+        if (targetLayer.canvas.width < minW || targetLayer.canvas.height < minH) {
+          const expanded = document.createElement('canvas');
+          expanded.width = minW;
+          expanded.height = minH;
+          const eCtx = expanded.getContext('2d');
+          if (eCtx && targetLayer.canvas.width > 0 && targetLayer.canvas.height > 0) {
+            eCtx.drawImage(targetLayer.canvas, 0, 0);
+          }
+          targetLayer.canvas = expanded;
+        }
+        return targetLayer.canvas;
+      }
       const c = document.createElement('canvas');
-      c.width = Math.max(1, doc.width);
-      c.height = Math.max(1, doc.height);
+      c.width = minW;
+      c.height = minH;
+      targetLayer.canvas = c;
       return c;
     },
     [doc.width, doc.height]
   );
+
+  // Auto-fit document on initial mount and when document dimensions change
+  const initialFitDoneRef = useRef(false);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const fitToView = () => {
+      const cWidth = container.clientWidth;
+      const cHeight = container.clientHeight;
+      if (cWidth > 100 && cHeight > 100) {
+        const padding = 64; // comfortable padding around canvas
+        const availW = Math.max(100, cWidth - padding);
+        const availH = Math.max(100, cHeight - padding);
+        const scale = Math.min(availW / doc.width, availH / doc.height, 1);
+        const roundedScale = Math.max(0.05, Math.min(3, Math.round(scale * 100) / 100));
+        onSetZoom(roundedScale);
+        onSetPan({ x: 0, y: 0 });
+      }
+    };
+
+    if (!initialFitDoneRef.current) {
+      initialFitDoneRef.current = true;
+      const timer = setTimeout(fitToView, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [doc.id, doc.width, doc.height, onSetZoom, onSetPan]);
 
   // Main Render Loop
   useEffect(() => {
@@ -139,6 +321,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       renderBackground: true,
       renderOverlays: true,
       activeLayerId,
+      activeTool,
       showGuides: doc.showRulers ?? doc.rulersVisible,
       showGrid: doc.showGrid ?? doc.gridVisible,
     });
@@ -374,8 +557,9 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
   // Handle Mouse Down Event
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 1 || e.altKey && activeTool !== 'clone-stamp' || activeTool === 'hand') {
+    if (e.button === 1 || (e.altKey && activeTool !== 'clone-stamp') || activeTool === 'hand') {
       // Middle click or Alt or Hand tool: Pan Mode
+      setIsPanning(true);
       setIsInteracting(true);
       setDragStart({ x: e.clientX, y: e.clientY });
       return;
@@ -383,7 +567,22 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
     if (e.button !== 0) return; // Only primary left click
 
+    const container = containerRef.current;
+    if (container) {
+      const cRect = container.getBoundingClientRect();
+      setCursorScreenPos({
+        x: e.clientX - cRect.left,
+        y: e.clientY - cRect.top,
+      });
+    }
+
     const docPt = screenToDoc(e.clientX, e.clientY);
+
+    // If currently editing text and clicked with another tool or outside
+    if (editingTextLayerId && activeTool !== 'text') {
+      commitTextEditing();
+    }
+
     setIsInteracting(true);
     setDragStart(docPt);
     setDragCurrent(docPt);
@@ -472,57 +671,22 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       return;
     }
 
-    // 5. Magic Wand Tool: Sample and flood fill region
+    // 5. Chroma & Tonal Wand Tool: Professional flood-fill & global tone selection
     if (activeTool === 'magic-wand') {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          const px = Math.floor(docPt.x);
-          const py = Math.floor(docPt.y);
-          if (px >= 0 && px < doc.width && py >= 0 && py < doc.height) {
-            const targetColor = ctx.getImageData(px, py, 1, 1).data;
-            const tolerance = (toolOptions.tolerance ?? 32) * 2.5;
+      const selection = computeWandSelection(doc, activeLayer, docPt, {
+        tolerance: toolOptions.tolerance ?? 32,
+        contiguous: toolOptions.contiguous ?? true,
+        sampleAllLayers: toolOptions.sampleAllLayers ?? false,
+        feather: toolOptions.feather || 0,
+      });
 
-            // Compute matching bounds across document
-            const imgData = ctx.getImageData(0, 0, doc.width, doc.height);
-            const data = imgData.data;
-            let minX = doc.width;
-            let maxX = 0;
-            let minY = doc.height;
-            let maxY = 0;
-            let count = 0;
-
-            for (let y = 0; y < doc.height; y += 2) {
-              for (let x = 0; x < doc.width; x += 2) {
-                const idx = (y * doc.width + x) * 4;
-                const rDiff = Math.abs(data[idx] - targetColor[0]);
-                const gDiff = Math.abs(data[idx + 1] - targetColor[1]);
-                const bDiff = Math.abs(data[idx + 2] - targetColor[2]);
-                const dist = Math.hypot(rDiff, gDiff, bDiff);
-
-                if (dist <= tolerance) {
-                  count++;
-                  if (x < minX) minX = x;
-                  if (x > maxX) maxX = x;
-                  if (y < minY) minY = y;
-                  if (y > maxY) maxY = y;
-                }
-              }
-            }
-
-            if (count > 0 && maxX >= minX && maxY >= minY) {
-              onSetSelection?.({
-                active: true,
-                type: 'rect',
-                bounds: { x: minX, y: minY, width: Math.max(10, maxX - minX), height: Math.max(10, maxY - minY) },
-                points: [],
-                feather: 0,
-              });
-              onPushHistory('Magic Wand Selection');
-            }
-          }
-        }
+      if (selection) {
+        onSetSelection?.(selection);
+        onPushHistory(
+          toolOptions.contiguous ?? true
+            ? 'Contiguous Wand Selection'
+            : 'Chroma / Tonal Global Selection'
+        );
       }
       return;
     }
@@ -536,10 +700,11 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       }
     }
 
-    // 7. Raster Stroke Tools: Brush / Pencil / Eraser / Blur / Sharpen / Smudge / Dodge / Burn / Sponge / Clone / Healing
+    // 7. Raster Stroke Tools: Brush / Pencil / Pen / Eraser / Blur / Sharpen / Smudge / Dodge / Burn / Sponge / Clone / Healing
     const isRasterStroke = [
       'brush',
       'pencil',
+      'pen',
       'eraser',
       'clone-stamp',
       'spot-healing',
@@ -554,6 +719,20 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
     if (isRasterStroke) {
       let target = activeLayer;
       if (!target || target.type !== 'raster') {
+        target = doc.layers.find((l) => l.type === 'raster' && !l.locked) ||
+                 doc.layers.find((l) => l.type === 'raster') || null;
+        if (target) {
+          onSelectLayer(target.id);
+        }
+      }
+
+      // If target layer is locked, auto-unlock it immediately so user can edit right away
+      if (target && target.locked) {
+        onUpdateLayer(target.id, { locked: false });
+        target = { ...target, locked: false };
+      }
+
+      if (!target) {
         const newLayer: Layer = {
           id: `layer-${Date.now()}`,
           name: `Layer ${doc.layers.length + 1}`,
@@ -575,6 +754,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       }
 
       strokePointsRef.current = [docPt];
+      lastStrokeTimeRef.current = performance.now();
       const layerCanvas = getOrCreateRasterCanvas(target);
       const lCtx = layerCanvas.getContext('2d');
       if (lCtx) {
@@ -582,19 +762,36 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
         lCtx.translate(-target.x, -target.y);
 
         const brushSize = toolOptions.brushSize || 20;
+        const sizeJitter = (toolOptions.brushSizeJitter || 0) / 100;
+        const opacityJitter = (toolOptions.brushOpacityJitter || 0) / 100;
+        const pressureSim = toolOptions.brushPressureSim ?? true;
+        const baseBrushSize = activeTool === 'pen' ? (toolOptions.strokeWidth || 2) : brushSize;
+        const baseOpacity = (toolOptions.brushOpacity || 100) / 100;
+
+        const randSizeJitter = sizeJitter > 0 ? (1 - Math.random() * sizeJitter) : 1.0;
+        const initialSize = Math.max(1, baseBrushSize * (pressureSim ? 0.6 : 1.0) * randSizeJitter);
+
+        const randOpacityJitter = opacityJitter > 0 ? (1 - Math.random() * opacityJitter) : 1.0;
+        const initialOpacity = Math.max(0.02, Math.min(1, baseOpacity * (pressureSim ? 0.65 : 1.0) * randOpacityJitter));
 
         if (activeTool === 'eraser') {
           lCtx.globalCompositeOperation = 'destination-out';
           lCtx.fillStyle = 'rgba(0,0,0,1)';
           lCtx.beginPath();
-          lCtx.arc(docPt.x, docPt.y, brushSize / 2, 0, Math.PI * 2);
+          lCtx.arc(docPt.x, docPt.y, initialSize / 2, 0, Math.PI * 2);
           lCtx.fill();
-        } else if (activeTool === 'brush' || activeTool === 'pencil') {
+        } else if (activeTool === 'brush' || activeTool === 'pencil' || activeTool === 'pen') {
           lCtx.globalCompositeOperation = 'source-over';
           lCtx.fillStyle = fgColor;
-          lCtx.globalAlpha = (toolOptions.brushOpacity || 100) / 100;
+          lCtx.globalAlpha = initialOpacity;
           lCtx.beginPath();
-          lCtx.arc(docPt.x, docPt.y, brushSize / 2, 0, Math.PI * 2);
+          lCtx.arc(
+            docPt.x,
+            docPt.y,
+            initialSize / 2,
+            0,
+            Math.PI * 2
+          );
           lCtx.fill();
         }
 
@@ -621,6 +818,14 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
             lCtx.beginPath();
             lCtx.ellipse(lx + b.width / 2, ly + b.height / 2, b.width / 2, b.height / 2, 0, 0, Math.PI * 2);
             lCtx.fill();
+          } else if (doc.selection.points && doc.selection.points.length > 2) {
+            lCtx.beginPath();
+            lCtx.moveTo(doc.selection.points[0].x - activeLayer.x, doc.selection.points[0].y - activeLayer.y);
+            for (let i = 1; i < doc.selection.points.length; i++) {
+              lCtx.lineTo(doc.selection.points[i].x - activeLayer.x, doc.selection.points[i].y - activeLayer.y);
+            }
+            lCtx.closePath();
+            lCtx.fill();
           } else {
             lCtx.fillRect(lx, ly, b.width, b.height);
           }
@@ -635,11 +840,40 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       return;
     }
 
-    // 9. Text Tool: Click to add Text layer
+    // 9. Text Tool: Click to add or edit Text layer
     if (activeTool === 'text') {
+      // If user is currently editing a text layer, commit previous edit
+      if (editingTextLayerId) {
+        commitTextEditing();
+      }
+
+      // Check if user clicked an existing text layer to edit it
+      const clickedTextLayer = [...doc.layers].reverse().find(
+        (l) =>
+          l.type === 'text' &&
+          l.visible &&
+          !l.locked &&
+          docPt.x >= l.x &&
+          docPt.x <= l.x + l.width &&
+          docPt.y >= l.y &&
+          docPt.y <= l.y + l.height
+      );
+
+      if (clickedTextLayer) {
+        startTextEditing(clickedTextLayer.id);
+        return;
+      }
+
+      // Clicked on empty space: create new text layer at clicked position
+      const initialText = 'Your text here';
+      const fontSize = toolOptions.fontSize || 36;
+      const fontFamily = toolOptions.fontFamily || 'Inter, sans-serif';
+      const fontWeight = '600';
+      const dims = CanvasRenderer.measureText(initialText, fontSize, fontFamily, fontWeight, 'normal', 1.2);
+
       const newTextLayer: Layer = {
         id: `text-${Date.now()}`,
-        name: 'Type Layer',
+        name: `Text ${doc.layers.filter((l) => l.type === 'text').length + 1}`,
         type: 'text',
         visible: true,
         locked: false,
@@ -647,15 +881,31 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
         blendMode: 'normal',
         x: Math.round(docPt.x),
         y: Math.round(docPt.y),
-        width: 320,
-        height: 60,
-        text: 'ImageMate Studio',
-        fontFamily: toolOptions.fontFamily || 'Inter, sans-serif',
-        fontSize: toolOptions.fontSize || 36,
+        width: dims.width,
+        height: dims.height,
+        text: initialText,
+        fontFamily,
+        fontSize,
+        fontWeight,
+        fontStyle: 'normal',
         textColor: fgColor,
+        textAlign: toolOptions.textAlign || 'left',
+        lineHeight: 1.2,
+        hiddenForEdit: true,
       };
+
       onAddLayerDirect(newTextLayer);
-      onPushHistory('Add Type Layer');
+      onSelectLayer(newTextLayer.id);
+      setEditingTextLayerId(newTextLayer.id);
+      setEditingTextVal(initialText);
+      onPushHistory?.('Add Type Layer');
+
+      setTimeout(() => {
+        if (textInputRef.current) {
+          textInputRef.current.focus();
+          textInputRef.current.select();
+        }
+      }, 50);
       return;
     }
   };
@@ -665,9 +915,18 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
     const docPt = screenToDoc(e.clientX, e.clientY);
     setCursorDocPos(docPt);
 
+    const container = containerRef.current;
+    if (container) {
+      const cRect = container.getBoundingClientRect();
+      setCursorScreenPos({
+        x: e.clientX - cRect.left,
+        y: e.clientY - cRect.top,
+      });
+    }
+
     if (!isInteracting) return;
 
-    if (activeTool === 'hand' || e.altKey || dragStart === null) {
+    if (isPanning || activeTool === 'hand' || (e.altKey && activeTool !== 'clone-stamp') || dragStart === null) {
       // Pan Viewport
       onSetPan({
         x: doc.pan.x + e.movementX,
@@ -729,6 +988,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
     const isContinuousStroke = [
       'brush',
       'pencil',
+      'pen',
       'eraser',
       'clone-stamp',
       'blur',
@@ -739,39 +999,85 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       'sponge',
     ].includes(activeTool);
 
-    if (isContinuousStroke && activeLayer) {
+    if (isContinuousStroke) {
+      let target = activeLayer;
+      if (!target || target.type !== 'raster') {
+        target = doc.layers.find((l) => l.type === 'raster') || null;
+      }
+      if (!target) return;
+
       const prevPt = strokePointsRef.current[strokePointsRef.current.length - 1] || docPt;
       strokePointsRef.current.push(docPt);
 
-      const layerCanvas = getOrCreateRasterCanvas(activeLayer);
+      const layerCanvas = getOrCreateRasterCanvas(target);
       const lCtx = layerCanvas.getContext('2d');
       if (lCtx) {
         lCtx.save();
-        lCtx.translate(-activeLayer.x, -activeLayer.y);
+        lCtx.translate(-target.x, -target.y);
 
         const brushSize = toolOptions.brushSize || 20;
+        const sizeJitter = (toolOptions.brushSizeJitter || 0) / 100;
+        const opacityJitter = (toolOptions.brushOpacityJitter || 0) / 100;
+        const pressureSim = toolOptions.brushPressureSim ?? true;
+        const baseBrushSize = activeTool === 'pen' ? (toolOptions.strokeWidth || 2) : brushSize;
+        const baseOpacity = (toolOptions.brushOpacity || 100) / 100;
 
-        if (activeTool === 'eraser') {
-          lCtx.globalCompositeOperation = 'destination-out';
-          lCtx.strokeStyle = 'rgba(0,0,0,1)';
-          lCtx.lineWidth = brushSize;
+        const dx = docPt.x - prevPt.x;
+        const dy = docPt.y - prevPt.y;
+        const dist = Math.hypot(dx, dy);
+
+        const now = performance.now();
+        const dt = Math.max(1, now - (lastStrokeTimeRef.current || now));
+        lastStrokeTimeRef.current = now;
+        const speed = dist / dt; // pixels per ms
+
+        const rawPressure = (e.nativeEvent as any)?.pressure;
+        const hasStylusPressure = rawPressure !== undefined && rawPressure > 0 && rawPressure !== 0.5;
+        const strokeCount = strokePointsRef.current.length;
+        const rampIn = Math.min(1, 0.4 + strokeCount * 0.15);
+        const speedFactor = Math.max(0.4, Math.min(1.3, 1.25 - speed * 0.12));
+        const simPressure = hasStylusPressure ? rawPressure : (pressureSim ? (rampIn * speedFactor) : 1.0);
+
+        if (activeTool === 'eraser' || activeTool === 'brush' || activeTool === 'pencil' || activeTool === 'pen') {
+          lCtx.globalCompositeOperation = activeTool === 'eraser' ? 'destination-out' : 'source-over';
+          lCtx.strokeStyle = activeTool === 'eraser' ? 'rgba(0,0,0,1)' : fgColor;
           lCtx.lineCap = 'round';
           lCtx.lineJoin = 'round';
-          lCtx.beginPath();
-          lCtx.moveTo(prevPt.x, prevPt.y);
-          lCtx.lineTo(docPt.x, docPt.y);
-          lCtx.stroke();
-        } else if (activeTool === 'brush' || activeTool === 'pencil') {
-          lCtx.globalCompositeOperation = 'source-over';
-          lCtx.strokeStyle = fgColor;
-          lCtx.lineWidth = brushSize;
-          lCtx.lineCap = activeTool === 'pencil' ? 'square' : 'round';
-          lCtx.lineJoin = 'round';
-          lCtx.globalAlpha = (toolOptions.brushOpacity || 100) / 100;
-          lCtx.beginPath();
-          lCtx.moveTo(prevPt.x, prevPt.y);
-          lCtx.lineTo(docPt.x, docPt.y);
-          lCtx.stroke();
+
+          if (sizeJitter > 0 || opacityJitter > 0 || pressureSim) {
+            const stepDist = Math.max(2, Math.min(12, baseBrushSize * 0.3));
+            const steps = Math.max(1, Math.min(60, Math.ceil(dist / stepDist)));
+
+            for (let s = 1; s <= steps; s++) {
+              const t0 = (s - 1) / steps;
+              const t1 = s / steps;
+              const p0x = prevPt.x + dx * t0;
+              const p0y = prevPt.y + dy * t0;
+              const p1x = prevPt.x + dx * t1;
+              const p1y = prevPt.y + dy * t1;
+
+              const randSizeJitter = sizeJitter > 0 ? (1 - Math.random() * sizeJitter) : 1.0;
+              const stepSize = Math.max(1, baseBrushSize * simPressure * randSizeJitter);
+
+              const randOpacityJitter = opacityJitter > 0 ? (1 - Math.random() * opacityJitter) : 1.0;
+              const pressureAlpha = pressureSim ? (0.35 + 0.65 * simPressure) : 1.0;
+              const stepOpacity = Math.max(0.02, Math.min(1, baseOpacity * pressureAlpha * randOpacityJitter));
+
+              lCtx.lineWidth = stepSize;
+              lCtx.globalAlpha = stepOpacity;
+              lCtx.beginPath();
+              lCtx.moveTo(p0x, p0y);
+              lCtx.lineTo(p1x, p1y);
+              lCtx.stroke();
+            }
+          } else {
+            lCtx.lineWidth = baseBrushSize;
+            lCtx.globalAlpha = baseOpacity;
+            lCtx.beginPath();
+            lCtx.moveTo(prevPt.x, prevPt.y);
+            lCtx.lineTo(docPt.x, docPt.y);
+            lCtx.stroke();
+          }
         } else if (activeTool === 'clone-stamp' && cloneSourceRef.current) {
           // Clone pixels from source offset
           const srcX = cloneSourceRef.current.x + (docPt.x - dragStart.x);
@@ -846,6 +1152,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
   // Handle Mouse Up Event
   const handleMouseUp = () => {
+    setIsPanning(false);
     if (!isInteracting) return;
     setIsInteracting(false);
 
@@ -973,8 +1280,20 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
 
         if (doc.selection && doc.selection.active) {
           const b = doc.selection.bounds;
+          const lx = b.x - activeLayer.x;
+          const ly = b.y - activeLayer.y;
           lCtx.beginPath();
-          lCtx.rect(b.x - activeLayer.x, b.y - activeLayer.y, b.width, b.height);
+          if (doc.selection.type === 'ellipse') {
+            lCtx.ellipse(lx + b.width / 2, ly + b.height / 2, b.width / 2, b.height / 2, 0, 0, Math.PI * 2);
+          } else if (doc.selection.points && doc.selection.points.length > 2) {
+            lCtx.moveTo(doc.selection.points[0].x - activeLayer.x, doc.selection.points[0].y - activeLayer.y);
+            for (let i = 1; i < doc.selection.points.length; i++) {
+              lCtx.lineTo(doc.selection.points[i].x - activeLayer.x, doc.selection.points[i].y - activeLayer.y);
+            }
+            lCtx.closePath();
+          } else {
+            lCtx.rect(lx, ly, b.width, b.height);
+          }
           lCtx.clip();
         }
 
@@ -1017,8 +1336,8 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       }
     }
 
-    // 8. Finalize Brush / Pencil / Eraser History
-    if (['brush', 'pencil', 'eraser', 'clone-stamp', 'blur', 'sharpen', 'dodge', 'burn'].includes(activeTool)) {
+    // 8. Finalize Brush / Pencil / Pen / Eraser History
+    if (['brush', 'pencil', 'pen', 'eraser', 'clone-stamp', 'blur', 'sharpen', 'smudge', 'dodge', 'burn', 'sponge'].includes(activeTool)) {
       onPushHistory(`${activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} Stroke`);
     }
 
@@ -1058,6 +1377,36 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
     }
   };
 
+  const isBrushTool = [
+    'brush',
+    'pencil',
+    'pen',
+    'eraser',
+    'clone-stamp',
+    'spot-healing',
+    'blur',
+    'sharpen',
+    'smudge',
+    'dodge',
+    'burn',
+    'sponge',
+  ].includes(activeTool);
+
+  const getCursorStyle = () => {
+    if (isPanning || (activeTool === 'hand' && isInteracting)) return 'grabbing';
+    if (activeTool === 'hand') return 'grab';
+    if (isBrushTool) return 'none';
+    if (activeTool === 'move') return transformHandle ? `${transformHandle}-resize` : 'default';
+    if (activeTool === 'text') return 'text';
+    if (activeTool === 'eyedropper') return 'crosshair';
+    return 'crosshair';
+  };
+
+  const activeBrushDiameter = Math.max(
+    4,
+    (activeTool === 'pen' ? (toolOptions.strokeWidth || 2) : (toolOptions.brushSize || 20)) * doc.zoom
+  );
+
   return (
     <div
       ref={containerRef}
@@ -1065,34 +1414,45 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={() => setCursorDocPos(null)}
-      onWheel={handleWheel}
-      className="flex-1 h-full bg-[#181818] relative overflow-hidden select-none flex items-center justify-center cursor-default"
-      style={{
-        cursor:
-          activeTool === 'hand' || isInteracting
-            ? 'grab'
-            : activeTool === 'move'
-            ? 'default'
-            : activeTool === 'eyedropper'
-            ? 'crosshair'
-            : activeTool === 'text'
-            ? 'text'
-            : 'crosshair',
+      onDoubleClick={handleDoubleClick}
+      onMouseLeave={() => {
+        setIsPanning(false);
+        setCursorDocPos(null);
+        setCursorScreenPos(null);
       }}
+      onWheel={handleWheel}
+      className="flex-1 h-full bg-[#181818] relative overflow-hidden select-none flex items-center justify-center"
+      style={{ cursor: getCursorStyle() }}
     >
       {/* Horizontal & Vertical Pixel Rulers */}
       <Rulers
         doc={doc}
         containerRef={containerRef}
+        canvasRef={canvasRef}
         mousePos={cursorDocPos}
         onAddGuide={onAddGuide}
         onResetPan={() => onSetPan({ x: 0, y: 0 })}
       />
 
+      {/* Precision Brush Cursor Outline with Center Reticle */}
+      {isBrushTool && cursorScreenPos && !isPanning && (
+        <div
+          className="pointer-events-none absolute z-50 rounded-full border border-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.85)] flex items-center justify-center -translate-x-1/2 -translate-y-1/2 will-change-transform"
+          style={{
+            left: `${cursorScreenPos.x}px`,
+            top: `${cursorScreenPos.y}px`,
+            width: `${activeBrushDiameter}px`,
+            height: `${activeBrushDiameter}px`,
+          }}
+        >
+          {/* 1px Center Reticle Dot */}
+          <div className="w-[3px] h-[3px] rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.9)]" />
+        </div>
+      )}
+
       {/* Document Viewport Wrapper with Pan & Zoom Transform */}
       <div
-        className="transition-transform duration-75 ease-out shadow-2xl relative"
+        className="shadow-2xl relative shrink-0 select-none"
         style={{
           transform: `translate(${doc.pan.x}px, ${doc.pan.y}px) scale(${doc.zoom})`,
           width: `${doc.width}px`,
@@ -1131,6 +1491,69 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
             >
               <X size={13} />
             </button>
+          </div>
+        )}
+
+        {/* In-Place Interactive Text Editor */}
+        {editingTextLayer && (
+          <div
+            className="absolute z-40"
+            style={{
+              left: `${editingTextLayer.x}px`,
+              top: `${editingTextLayer.y}px`,
+              transform: editingTextLayer.rotation ? `rotate(${editingTextLayer.rotation}deg)` : undefined,
+              transformOrigin: 'top left',
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* Quick Floating Text Bar with Confirm & Cancel */}
+            <div className="absolute -top-9 left-0 flex items-center gap-1.5 bg-[#1e1e1e] border border-cyan-500/80 rounded-md px-2 py-1 shadow-2xl text-xs z-50 whitespace-nowrap">
+              <span className="text-[11px] text-gray-300 font-mono">
+                {editingTextLayer.fontSize || 36}pt {editingTextLayer.fontFamily?.split(',')[0]}
+              </span>
+              <div className="h-3 w-px bg-gray-600 mx-0.5" />
+              <button
+                type="button"
+                onClick={commitTextEditing}
+                title="Commit Text (Ctrl+Enter)"
+                className="flex items-center gap-1 px-2 py-0.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-medium text-[11px] transition-colors shadow-sm"
+              >
+                <Check size={12} />
+                <span>Done</span>
+              </button>
+              <button
+                type="button"
+                onClick={cancelTextEditing}
+                title="Cancel (Esc)"
+                className="p-1 hover:bg-[#333333] text-gray-400 hover:text-white rounded transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+
+            <textarea
+              ref={textInputRef}
+              value={editingTextVal}
+              onChange={handleTextChange}
+              onKeyDown={handleTextKeyDown}
+              rows={Math.max(1, editingTextVal.split('\n').length)}
+              className="bg-black/85 text-white border-2 border-cyan-400 outline-none rounded p-1 shadow-2xl overflow-hidden block resize-none"
+              style={{
+                fontFamily: editingTextLayer.fontFamily || 'Inter, sans-serif',
+                fontSize: `${editingTextLayer.fontSize || 36}px`,
+                fontWeight: editingTextLayer.fontWeight || '600',
+                fontStyle: editingTextLayer.fontStyle || 'normal',
+                color: editingTextLayer.textColor || fgColor,
+                textAlign: editingTextLayer.textAlign || 'left',
+                lineHeight: editingTextLayer.lineHeight || 1.2,
+                minWidth: '160px',
+                width: `${Math.max(160, editingTextLayer.width)}px`,
+                height: `${Math.max(42, editingTextLayer.height)}px`,
+              }}
+              placeholder="Type your text..."
+              autoFocus
+            />
           </div>
         )}
       </div>

@@ -1,5 +1,175 @@
 @import "tailwindcss";
 
+:root {
+  /* Default Tokyo Night Fallback Variables */
+  --theme-bg-app: #1a1b26;
+  --theme-bg-surface: #24283b;
+  --theme-bg-header: #1f2335;
+  --theme-bg-toolbar: #1a1b26;
+  --theme-bg-canvas: #16161e;
+  --theme-bg-tab-active: #24283b;
+  --theme-bg-tab-inactive: #16161e;
+  --theme-bg-hover: #292e42;
+  --theme-bg-active: #7aa2f7;
+  --theme-border: #2f3549;
+  --theme-border-subtle: #24283b;
+  --theme-text-primary: #c0caf5;
+  --theme-text-secondary: #a9b1d6;
+  --theme-text-muted: #565f89;
+  --theme-accent: #7aa2f7;
+  --theme-accent-hover: #89b4fa;
+  --theme-accent-gradient: linear-gradient(135deg, #7aa2f7 0%, #bb9af7 100%);
+  --theme-selection-ants: #7dcfff;
+}
+
+body {
+  background-color: var(--theme-bg-app);
+  color: var(--theme-text-primary);
+}
+
+/* Universal Theme Cascading Rules:
+   Harmonizes existing arbitrary hex utilities across all panels and dialogs */
+[data-theme] {
+  background-color: var(--theme-bg-app);
+  color: var(--theme-text-primary);
+}
+
+/* Backgrounds */
+[data-theme] .bg-\[\#1e1e1e\],
+[data-theme] .bg-\[\#181818\],
+[data-theme] .bg-\[\#141414\],
+[data-theme] .bg-\[\#121212\] {
+  background-color: var(--theme-bg-app) !important;
+}
+
+[data-theme] .bg-\[\#202020\] {
+  background-color: var(--theme-bg-toolbar) !important;
+}
+
+[data-theme] .bg-\[\#252526\],
+[data-theme] .bg-\[\#242424\],
+[data-theme] .bg-\[\#2a2a2a\],
+[data-theme] .bg-\[\#1c1c1c\] {
+  background-color: var(--theme-bg-surface) !important;
+}
+
+[data-theme] .bg-\[\#282828\],
+[data-theme] .bg-\[\#2b2b2b\],
+[data-theme] .bg-\[\#1f1f1f\] {
+  background-color: var(--theme-bg-header) !important;
+}
+
+/* Interactive & Hover States */
+[data-theme] .hover\:bg-\[\#2d2d2d\]:hover,
+[data-theme] .hover\:bg-\[\#333333\]:hover,
+[data-theme] .hover\:bg-\[\#383838\]:hover,
+[data-theme] .hover\:bg-\[\#404040\]:hover,
+[data-theme] .hover\:bg-\[\#2a2a2a\]:hover {
+  background-color: var(--theme-bg-hover) !important;
+}
+
+/* Active & Selection States */
+[data-theme] .bg-\[\#007acc\] {
+  background-color: var(--theme-bg-active) !important;
+  color: #ffffff !important;
+}
+
+[data-theme] .hover\:bg-\[\#007acc\]:hover {
+  background-color: var(--theme-bg-active) !important;
+  color: #ffffff !important;
+}
+
+/* Borders */
+[data-theme] .border-\[\#2d2d2d\],
+[data-theme] .border-\[\#282828\],
+[data-theme] .border-\[\#1f1f1f\] {
+  border-color: var(--theme-border-subtle) !important;
+}
+
+[data-theme] .border-\[\#333333\],
+[data-theme] .border-\[\#383838\],
+[data-theme] .border-\[\#3e3e42\],
+[data-theme] .border-\[\#444444\],
+[data-theme] .border-\[\#555555\] {
+  border-color: var(--theme-border) !important;
+}
+
+[data-theme] .border-\[\#007acc\] {
+  border-color: var(--theme-accent) !important;
+}
+
+/* Accents & Highlights */
+[data-theme] .text-\[\#00c8ff\],
+[data-theme] .text-cyan-400,
+[data-theme] .text-cyan-300 {
+  color: var(--theme-accent) !important;
+}
+
+[data-theme] .border-cyan-400,
+[data-theme] .border-cyan-300 {
+  border-color: var(--theme-accent) !important;
+}
+
+[data-theme] .ring-cyan-400\/50 {
+  --tw-ring-color: color-mix(in srgb, var(--theme-accent) 50%, transparent) !important;
+}
+
+/* Range Sliders Dynamic Theme Styling */
+input[type="range"] {
+  accent-color: var(--theme-accent) !important;
+}
+
+[data-theme] input[type="range"] {
+  accent-color: var(--theme-accent) !important;
+}
+
+[data-theme] .accent-\[\#007acc\] {
+  accent-color: var(--theme-accent) !important;
+}
+
+/* Range input thumb & track cross-browser support */
+[data-theme] input[type="range"]::-webkit-slider-thumb,
+input[type="range"]::-webkit-slider-thumb {
+  accent-color: var(--theme-accent) !important;
+}
+
+[data-theme] input[type="range"]::-moz-range-thumb,
+input[type="range"]::-moz-range-thumb {
+  background-color: var(--theme-accent) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+[data-theme] input[type="range"]::-webkit-slider-runnable-track,
+input[type="range"]::-webkit-slider-runnable-track {
+  background-color: var(--theme-bg-canvas, #16161e);
+  border: 1px solid var(--theme-border-subtle, #2f3549);
+}
+
+[data-theme] input[type="range"]::-moz-range-track,
+input[type="range"]::-moz-range-track {
+  background-color: var(--theme-bg-canvas, #16161e);
+  border: 1px solid var(--theme-border-subtle, #2f3549);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--theme-bg-app);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-accent);
+}
+
 @layer utilities {
   /* Custom ImageMate checkerboard pattern for transparent canvases */
   .bg-checkerboard {
@@ -13,11 +183,11 @@
   }
 
   .bg-checkerboard-dark {
-    background-color: #242424;
-    background-image: linear-gradient(45deg, #1c1c1c 25%, transparent 25%),
-      linear-gradient(-45deg, #1c1c1c 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #1c1c1c 75%),
-      linear-gradient(-45deg, transparent 75%, #1c1c1c 75%);
+    background-color: var(--theme-bg-surface);
+    background-image: linear-gradient(45deg, var(--theme-bg-canvas) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--theme-bg-canvas) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--theme-bg-canvas) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--theme-bg-canvas) 75%);
     background-size: 16px 16px;
     background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
   }
@@ -38,26 +208,7 @@
   }
 }
 
-/* Custom ImageMate UI scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1e1e1e;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #383838;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #4f4f4f;
-}
-
-/* Disable context menu on canvas where desired */
+/* Canvas element styling */
 canvas {
   image-rendering: auto;
 }

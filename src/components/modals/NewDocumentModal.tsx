@@ -26,7 +26,7 @@ export const NewDocumentModal: React.FC<NewDocumentModalProps> = ({
   onCreateDocument,
   onOpenSample,
 }) => {
-  const [title, setTitle] = useState('Untitled-1.psd');
+  const [title, setTitle] = useState('Untitled-1.imate');
   const [width, setWidth] = useState(1920);
   const [height, setHeight] = useState(1080);
   const [dpi, setDpi] = useState(72);
@@ -37,7 +37,7 @@ export const NewDocumentModal: React.FC<NewDocumentModalProps> = ({
   if (!isOpen) return null;
 
   const handleSelectPreset = (preset: { name: string; width: number; height: number; dpi: number }) => {
-    setTitle(`${preset.name}.psd`);
+    setTitle(`${preset.name}.imate`);
     setWidth(preset.width);
     setHeight(preset.height);
     setDpi(preset.dpi);

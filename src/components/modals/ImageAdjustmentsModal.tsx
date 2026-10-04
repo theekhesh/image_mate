@@ -107,7 +107,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="100"
                   value={params.brightness}
                   onChange={(e) => setParams({ ...params, brightness: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
 
@@ -122,7 +122,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="100"
                   value={params.contrast}
                   onChange={(e) => setParams({ ...params, contrast: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
             </>
@@ -142,7 +142,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="180"
                   value={params.hue}
                   onChange={(e) => setParams({ ...params, hue: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
 
@@ -157,7 +157,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="100"
                   value={params.saturation}
                   onChange={(e) => setParams({ ...params, saturation: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
 
@@ -172,7 +172,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="100"
                   value={params.lightness}
                   onChange={(e) => setParams({ ...params, lightness: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
             </>
@@ -193,7 +193,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="100"
                   value={params.cyanRed}
                   onChange={(e) => setParams({ ...params, cyanRed: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
 
@@ -209,7 +209,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="100"
                   value={params.magentaGreen}
                   onChange={(e) => setParams({ ...params, magentaGreen: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
 
@@ -225,7 +225,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="100"
                   value={params.yellowBlue}
                   onChange={(e) => setParams({ ...params, yellowBlue: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
             </>
@@ -245,7 +245,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="254"
                   value={params.levelsInBlack}
                   onChange={(e) => setParams({ ...params, levelsInBlack: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
 
@@ -261,7 +261,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   step="0.05"
                   value={params.levelsGamma}
                   onChange={(e) => setParams({ ...params, levelsGamma: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
 
@@ -276,7 +276,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                   max="255"
                   value={params.levelsInWhite}
                   onChange={(e) => setParams({ ...params, levelsInWhite: Number(e.target.value) })}
-                  className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                  className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                 />
               </div>
             </>
@@ -295,7 +295,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                 max="16"
                 value={params.posterizeLevels}
                 onChange={(e) => setParams({ ...params, posterizeLevels: Number(e.target.value) })}
-                className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
               />
             </div>
           )}
@@ -313,7 +313,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                 max="254"
                 value={params.threshold}
                 onChange={(e) => setParams({ ...params, threshold: Number(e.target.value) })}
-                className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
               />
             </div>
           )}
@@ -331,7 +331,7 @@ export const ImageAdjustmentsModal: React.FC<ImageAdjustmentsModalProps> = ({
                 max="100"
                 value={params.sepiaIntensity}
                 onChange={(e) => setParams({ ...params, sepiaIntensity: Number(e.target.value) })}
-                className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
               />
             </div>
           )}

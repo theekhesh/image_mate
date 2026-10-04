@@ -59,6 +59,9 @@ export interface ToolOptions {
   brushHardness: number;
   brushOpacity: number;
   brushFlow: number;
+  brushSizeJitter?: number; // 0 - 100%
+  brushOpacityJitter?: number; // 0 - 100%
+  brushPressureSim?: boolean; // Pressure sensitivity simulation
   feather: number;
   tolerance: number;
   contiguous: boolean;
@@ -145,6 +148,7 @@ export interface Layer {
   textAlign?: 'left' | 'center' | 'right';
   letterSpacing?: number;
   lineHeight?: number;
+  hiddenForEdit?: boolean;
   warp?: {
     type: 'none' | 'arc' | 'wave' | 'bulge';
     bend: number;
@@ -210,6 +214,9 @@ export interface BrushSettings {
   opacity: number; // 0 - 100
   flow: number; // 0 - 100
   spacing: number; // percentage
+  sizeJitter?: number; // 0 - 100%
+  opacityJitter?: number; // 0 - 100%
+  pressureSim?: boolean; // Pressure sensitivity simulation
   preset:
     | 'soft-round'
     | 'hard-round'
@@ -274,6 +281,23 @@ export interface DocumentProject {
   snapToGrid: boolean;
   selection: SelectionState | null;
   isDirty?: boolean;
+}
+
+export interface ImateSerializedLayer extends Omit<Layer, 'canvas' | 'maskCanvas'> {
+  dataUrl?: string;
+  maskDataUrl?: string;
+}
+
+export interface ImateFilePackage {
+  format: 'IMATELAYERS';
+  version: '1.0';
+  generator: string;
+  savedAt: number;
+  title: string;
+  document: Omit<DocumentProject, 'layers' | 'history' | 'historyIndex'> & {
+    layers: ImateSerializedLayer[];
+    historyIndex?: number;
+  };
 }
 
 export type ActivePanel =

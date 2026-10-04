@@ -623,7 +623,7 @@ export function createBrandBannerProject(): DocumentProject {
  * Generate a blank new document
  */
 export function createBlankProject(
-  title = 'Untitled-1.psd',
+  title = 'Untitled-1.imate',
   width = 1920,
   height = 1080,
   dpi = 72,
@@ -639,13 +639,18 @@ export function createBlankProject(
     ctx.fillRect(0, 0, width, height);
   }
 
+  // Pre-allocate transparent canvas for Layer 1 with exact document pixel dimensions
+  const layer1Canvas = document.createElement('canvas');
+  layer1Canvas.width = width;
+  layer1Canvas.height = height;
+
   const layers: Layer[] = [
     {
       id: 'layer-bg-1',
       name: 'Background',
       type: 'raster',
       visible: true,
-      locked: true,
+      locked: false,
       opacity: 100,
       blendMode: 'normal',
       x: 0,
@@ -673,7 +678,7 @@ export function createBlankProject(
       rotation: 0,
       scaleX: 1,
       scaleY: 1,
-      canvas: document.createElement('canvas'),
+      canvas: layer1Canvas,
       effects: {},
     },
   ];

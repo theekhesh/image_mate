@@ -10,6 +10,7 @@ import { DocumentProject, Guide } from '../types/imagemate';
 export interface RulersProps {
   doc: DocumentProject;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   mousePos?: { x: number; y: number } | null;
   onAddGuide?: (guide: Guide) => void;
   onResetPan?: () => void;
@@ -33,6 +34,7 @@ function getMajorStep(zoom: number): number {
 export const Rulers: React.FC<RulersProps> = ({
   doc,
   containerRef,
+  canvasRef,
   mousePos,
   onAddGuide,
   onResetPan,
@@ -72,6 +74,20 @@ export const Rulers: React.FC<RulersProps> = ({
   // Screen to Document conversion helper
   const screenToDoc = useCallback(
     (screenX: number, screenY: number) => {
+      const canvas = canvasRef?.current;
+      const container = containerRef.current;
+      if (canvas && container) {
+        const cRect = canvas.getBoundingClientRect();
+        const contRect = container.getBoundingClientRect();
+        if (cRect.width > 0 && cRect.height > 0) {
+          const canvasLeftInCont = cRect.left - contRect.left;
+          const canvasTopInCont = cRect.top - contRect.top;
+          const docX = ((screenX - canvasLeftInCont) / cRect.width) * doc.width;
+          const docY = ((screenY - canvasTopInCont) / cRect.height) * doc.height;
+          return { x: docX, y: docY };
+        }
+      }
+
       const cw = containerSize.width;
       const ch = containerSize.height;
       if (cw <= 0 || ch <= 0) return { x: 0, y: 0 };
@@ -87,7 +103,7 @@ export const Rulers: React.FC<RulersProps> = ({
 
       return { x: docX, y: docY };
     },
-    [containerSize, doc.pan, doc.zoom, doc.width, doc.height]
+    [canvasRef, containerRef, containerSize, doc.pan, doc.zoom, doc.width, doc.height]
   );
 
   // Render Horizontal (Top) Ruler
@@ -116,12 +132,23 @@ export const Rulers: React.FC<RulersProps> = ({
     ctx.fillRect(0, 0, rulerWidth, rulerHeight);
 
     // Document bounds on ruler
-    const centerX = containerSize.width / 2 + doc.pan.x;
-    const docLeft = centerX - (doc.width * doc.zoom) / 2;
-    const originX = docLeft - RULER_THICKNESS;
+    let originX: number;
+    let screenDocRight: number;
+    const docCanvas = canvasRef?.current;
+    const container = containerRef.current;
+    if (docCanvas && container) {
+      const cRect = docCanvas.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      originX = cRect.left - contRect.left - RULER_THICKNESS;
+      screenDocRight = originX + cRect.width;
+    } else {
+      const centerX = containerSize.width / 2 + doc.pan.x;
+      const docLeft = centerX - (doc.width * doc.zoom) / 2;
+      originX = docLeft - RULER_THICKNESS;
+      screenDocRight = originX + doc.width * doc.zoom;
+    }
 
     const screenDocLeft = originX;
-    const screenDocRight = originX + doc.width * doc.zoom;
 
     // Highlight document extent on ruler
     if (screenDocRight > 0 && screenDocLeft < rulerWidth) {
@@ -234,12 +261,23 @@ export const Rulers: React.FC<RulersProps> = ({
     ctx.fillRect(0, 0, rulerWidth, rulerHeight);
 
     // Document bounds on ruler
-    const centerY = containerSize.height / 2 + doc.pan.y;
-    const docTop = centerY - (doc.height * doc.zoom) / 2;
-    const originY = docTop - RULER_THICKNESS;
+    let originY: number;
+    let screenDocBottom: number;
+    const docCanvas = canvasRef?.current;
+    const container = containerRef.current;
+    if (docCanvas && container) {
+      const cRect = docCanvas.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      originY = cRect.top - contRect.top - RULER_THICKNESS;
+      screenDocBottom = originY + cRect.height;
+    } else {
+      const centerY = containerSize.height / 2 + doc.pan.y;
+      const docTop = centerY - (doc.height * doc.zoom) / 2;
+      originY = docTop - RULER_THICKNESS;
+      screenDocBottom = originY + doc.height * doc.zoom;
+    }
 
     const screenDocTop = originY;
-    const screenDocBottom = originY + doc.height * doc.zoom;
 
     // Highlight document extent on ruler
     if (screenDocBottom > 0 && screenDocTop < rulerHeight) {

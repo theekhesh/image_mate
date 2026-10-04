@@ -360,7 +360,7 @@ export const FilterGalleryModal: React.FC<FilterGalleryModalProps> = ({
                     max="50"
                     value={params.radius}
                     onChange={(e) => setParams({ ...params, radius: Number(e.target.value) })}
-                    className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                    className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                   />
                 </div>
               )}
@@ -377,7 +377,7 @@ export const FilterGalleryModal: React.FC<FilterGalleryModalProps> = ({
                     max="200"
                     value={params.amount}
                     onChange={(e) => setParams({ ...params, amount: Number(e.target.value) })}
-                    className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                    className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                   />
                 </div>
               )}
@@ -394,7 +394,7 @@ export const FilterGalleryModal: React.FC<FilterGalleryModalProps> = ({
                     max="64"
                     value={params.blockSize}
                     onChange={(e) => setParams({ ...params, blockSize: Number(e.target.value) })}
-                    className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                    className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                   />
                 </div>
               )}
@@ -411,7 +411,7 @@ export const FilterGalleryModal: React.FC<FilterGalleryModalProps> = ({
                     max="40"
                     value={params.offset}
                     onChange={(e) => setParams({ ...params, offset: Number(e.target.value) })}
-                    className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                    className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                   />
                 </div>
               )}
@@ -428,7 +428,7 @@ export const FilterGalleryModal: React.FC<FilterGalleryModalProps> = ({
                     max="100"
                     value={params.amount}
                     onChange={(e) => setParams({ ...params, amount: Number(e.target.value) })}
-                    className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                    className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                   />
                 </div>
               )}
@@ -445,7 +445,7 @@ export const FilterGalleryModal: React.FC<FilterGalleryModalProps> = ({
                     max="100"
                     value={params.amount}
                     onChange={(e) => setParams({ ...params, amount: Number(e.target.value) })}
-                    className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                    className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                   />
                 </div>
               )}
@@ -462,7 +462,7 @@ export const FilterGalleryModal: React.FC<FilterGalleryModalProps> = ({
                     max="100"
                     value={params.intensity}
                     onChange={(e) => setParams({ ...params, intensity: Number(e.target.value) })}
-                    className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                    className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                   />
                 </div>
               )}

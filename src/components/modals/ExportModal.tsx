@@ -18,7 +18,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   document: doc,
 }) => {
-  const [format, setFormat] = useState<'png' | 'jpeg' | 'webp' | 'json'>('png');
+  const [format, setFormat] = useState<'png' | 'jpeg' | 'webp' | 'imate'>('png');
   const [scale, setScale] = useState<number>(1);
   const [quality, setQuality] = useState<number>(92);
   const [includeBg, setIncludeBg] = useState<boolean>(true);
@@ -29,8 +29,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const outHeight = Math.round(doc.height * scale);
 
   const handleExport = () => {
-    if (format === 'json') {
-      FileExporter.saveProjectJson(doc);
+    if (format === 'imate') {
+      FileExporter.saveImateDocument(doc);
     } else {
       FileExporter.downloadImage(doc, format, quality / 100, scale, includeBg);
     }
@@ -60,7 +60,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <div className="flex flex-col gap-1.5">
             <span className="text-gray-400 font-semibold">Format:</span>
             <div className="grid grid-cols-4 gap-1.5">
-              {(['png', 'jpeg', 'webp', 'json'] as const).map((fmt) => (
+              {(['png', 'jpeg', 'webp', 'imate'] as const).map((fmt) => (
                 <button
                   key={fmt}
                   onClick={() => setFormat(fmt)}
@@ -70,14 +70,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                       : 'bg-[#181818] text-gray-400 hover:bg-[#282828] hover:text-white border border-[#333333]'
                   }`}
                 >
-                  {fmt === 'json' ? 'PSD JSON' : fmt}
+                  {fmt === 'imate' ? '.IMATE' : fmt}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Scale Resolution */}
-          {format !== 'json' && (
+          {format !== 'imate' && (
             <div className="flex flex-col gap-1.5">
               <span className="text-gray-400 font-semibold">Scale Resolution:</span>
               <div className="grid grid-cols-4 gap-1.5">
@@ -111,7 +111,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 max="100"
                 value={quality}
                 onChange={(e) => setQuality(Number(e.target.value))}
-                className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
               />
             </div>
           )}

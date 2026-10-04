@@ -4,10 +4,13 @@
 
 import React from 'react';
 import { Layer } from '../../types/imagemate';
+import { CanvasRenderer } from '../../utils/canvasRenderer';
 import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Bold,
+  Italic,
   RotateCw,
   FlipHorizontal,
   FlipVertical,
@@ -99,7 +102,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             max="180"
             value={activeLayer.rotation || 0}
             onChange={(e) => onUpdateLayer({ rotation: Number(e.target.value) })}
-            className="flex-1 accent-[#007acc] h-1.5 bg-[#181818] rounded"
+            className="flex-1 accent-[var(--theme-accent)] h-1.5 bg-[#181818] rounded cursor-pointer"
           />
           <span className="w-9 text-right font-mono">{activeLayer.rotation || 0}°</span>
         </div>
@@ -107,25 +110,57 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
       {/* Text Layer Specific Properties */}
       {activeLayer.type === 'text' && (
-        <div className="flex flex-col gap-2 pb-3 border-b border-[#2d2d2d]">
-          <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-            <Type size={12} />
-            <span>Typography</span>
+        <div className="flex flex-col gap-2.5 pb-3 border-b border-[#2d2d2d]">
+          <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Type size={12} />
+              <span>Typography</span>
+            </div>
+            <span className="text-[10px] text-gray-400 font-mono">
+              {activeLayer.width} × {activeLayer.height}px
+            </span>
           </div>
 
           <textarea
             value={activeLayer.text || ''}
-            onChange={(e) => onUpdateLayer({ text: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              const dims = CanvasRenderer.measureText(
+                val || ' ',
+                activeLayer.fontSize || 36,
+                activeLayer.fontFamily || 'Inter, sans-serif',
+                activeLayer.fontWeight || '600',
+                activeLayer.fontStyle || 'normal',
+                activeLayer.lineHeight || 1.2
+              );
+              onUpdateLayer({
+                text: val,
+                width: dims.width,
+                height: dims.height,
+              });
+            }}
             placeholder="Type your text..."
             rows={3}
-            className="w-full bg-[#181818] border border-[#3e3e42] rounded p-2 text-xs text-white resize-none outline-none focus:border-[#007acc]"
+            className="w-full bg-[#181818] border border-[#3e3e42] rounded p-2 text-xs text-white resize-none outline-none focus:border-cyan-500 font-sans"
           />
 
+          {/* Font Family Selection */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-gray-400">Font:</span>
+            <span className="text-gray-400 text-xs">Font:</span>
             <select
               value={activeLayer.fontFamily || 'Inter, sans-serif'}
-              onChange={(e) => onUpdateLayer({ fontFamily: e.target.value })}
+              onChange={(e) => {
+                const newFont = e.target.value;
+                const dims = CanvasRenderer.measureText(
+                  activeLayer.text || ' ',
+                  activeLayer.fontSize || 36,
+                  newFont,
+                  activeLayer.fontWeight || '600',
+                  activeLayer.fontStyle || 'normal',
+                  activeLayer.lineHeight || 1.2
+                );
+                onUpdateLayer({ fontFamily: newFont, width: dims.width, height: dims.height });
+              }}
               className="bg-[#181818] border border-[#3e3e42] rounded px-2 py-1 text-xs text-white flex-1"
             >
               <option value="Inter, sans-serif">Inter</option>
@@ -133,11 +168,127 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
               <option value="Oswald, sans-serif">Oswald</option>
               <option value="Playfair Display, serif">Playfair Display</option>
               <option value="Fira Code, monospace">Fira Code</option>
+              <option value="Impact, sans-serif">Impact</option>
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Courier New, monospace">Courier New</option>
+              <option value="Times New Roman, serif">Times New Roman</option>
             </select>
           </div>
 
+          {/* Size & Weight */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-gray-400">Color:</span>
+            <span className="text-gray-400 text-xs">Size:</span>
+            <div className="flex items-center gap-1.5 flex-1 justify-end">
+              <input
+                type="number"
+                min="8"
+                max="300"
+                value={activeLayer.fontSize || 36}
+                onChange={(e) => {
+                  const newSize = Math.max(8, Number(e.target.value) || 12);
+                  const dims = CanvasRenderer.measureText(
+                    activeLayer.text || ' ',
+                    newSize,
+                    activeLayer.fontFamily || 'Inter, sans-serif',
+                    activeLayer.fontWeight || '600',
+                    activeLayer.fontStyle || 'normal',
+                    activeLayer.lineHeight || 1.2
+                  );
+                  onUpdateLayer({ fontSize: newSize, width: dims.width, height: dims.height });
+                }}
+                className="w-16 bg-[#181818] border border-[#3e3e42] rounded px-2 py-1 text-xs text-white text-center font-mono"
+              />
+              <span className="text-gray-400 text-xs">pt</span>
+            </div>
+          </div>
+
+          {/* Styles & Alignment */}
+          <div className="flex items-center justify-between gap-1 pt-1">
+            <div className="flex items-center gap-1 bg-[#181818] p-0.5 rounded border border-[#3e3e42]">
+              <button
+                type="button"
+                onClick={() => {
+                  const newWeight = (activeLayer.fontWeight === '700' || activeLayer.fontWeight === 'bold') ? '400' : '700';
+                  const dims = CanvasRenderer.measureText(
+                    activeLayer.text || ' ',
+                    activeLayer.fontSize || 36,
+                    activeLayer.fontFamily || 'Inter, sans-serif',
+                    newWeight,
+                    activeLayer.fontStyle || 'normal',
+                    activeLayer.lineHeight || 1.2
+                  );
+                  onUpdateLayer({ fontWeight: newWeight, width: dims.width, height: dims.height });
+                }}
+                className={`p-1 rounded ${
+                  (activeLayer.fontWeight === '700' || activeLayer.fontWeight === 'bold')
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Bold"
+              >
+                <Bold size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const newStyle = activeLayer.fontStyle === 'italic' ? 'normal' : 'italic';
+                  const dims = CanvasRenderer.measureText(
+                    activeLayer.text || ' ',
+                    activeLayer.fontSize || 36,
+                    activeLayer.fontFamily || 'Inter, sans-serif',
+                    activeLayer.fontWeight || '600',
+                    newStyle,
+                    activeLayer.lineHeight || 1.2
+                  );
+                  onUpdateLayer({ fontStyle: newStyle, width: dims.width, height: dims.height });
+                }}
+                className={`p-1 rounded ${
+                  activeLayer.fontStyle === 'italic' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+                title="Italic"
+              >
+                <Italic size={13} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1 bg-[#181818] p-0.5 rounded border border-[#3e3e42]">
+              <button
+                type="button"
+                onClick={() => onUpdateLayer({ textAlign: 'left' })}
+                className={`p-1 rounded ${
+                  (activeLayer.textAlign || 'left') === 'left' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+                title="Align Left"
+              >
+                <AlignLeft size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateLayer({ textAlign: 'center' })}
+                className={`p-1 rounded ${
+                  activeLayer.textAlign === 'center' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+                title="Align Center"
+              >
+                <AlignCenter size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateLayer({ textAlign: 'right' })}
+                className={`p-1 rounded ${
+                  activeLayer.textAlign === 'right' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+                title="Align Right"
+              >
+                <AlignRight size={13} />
+              </button>
+            </div>
+          </div>
+
+          {/* Color */}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="text-gray-400 text-xs">Color:</span>
             <div className="flex items-center gap-2">
               <input
                 type="color"
@@ -145,7 +296,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 onChange={(e) => onUpdateLayer({ textColor: e.target.value })}
                 className="w-6 h-6 rounded border border-[#3e3e42] cursor-pointer bg-transparent"
               />
-              <span className="font-mono text-gray-300">{activeLayer.textColor || '#ffffff'}</span>
+              <span className="font-mono text-xs text-gray-300">{activeLayer.textColor || '#ffffff'}</span>
             </div>
           </div>
         </div>

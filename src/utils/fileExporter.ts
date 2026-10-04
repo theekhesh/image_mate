@@ -2,7 +2,7 @@
  * ImageMate Studio - Multi-Format Export & Import Engine
  */
 
-import { DocumentProject, Layer } from '../types/imagemate';
+import { DocumentProject, Layer, ImateFilePackage, ImateSerializedLayer } from '../types/imagemate';
 import { CanvasRenderer } from './canvasRenderer';
 
 export class FileExporter {
@@ -79,48 +79,252 @@ export class FileExporter {
   }
 
   /**
-   * Save Project as JSON (ImageMate Project .json)
+   * Save Document Project as .imate (Native ImageMate Studio Project format)
+   * Captures all document metadata, guides, layers, raster pixel data, masks,
+   * vector shapes, typography, blend modes, adjustments, and layer effects losslessly.
    */
-  static saveProjectJson(doc: DocumentProject) {
-    // Serialize raster canvases to base64 data URLs
-    const serializableDoc = {
-      ...doc,
-      layers: doc.layers.map((layer) => {
-        const { canvas, maskCanvas, ...rest } = layer;
-        let dataUrl: string | undefined = undefined;
-        let maskDataUrl: string | undefined = undefined;
+  static saveImateDocument(doc: DocumentProject, customFileName?: string): string {
+    // Clean and normalize filename to always end with .imate
+    let baseName = customFileName || doc.title || 'Untitled';
+    baseName = baseName.replace(/\.(imate|json|psd|png|jpg|jpeg|webp)$/i, '');
+    if (!baseName.trim()) baseName = 'Untitled';
+    const filename = `${baseName}.imate`;
 
-        if (canvas) {
-          try {
-            dataUrl = canvas.toDataURL('image/png');
-          } catch {
-            // ignore
-          }
-        }
-        if (maskCanvas) {
-          try {
-            maskDataUrl = maskCanvas.toDataURL('image/png');
-          } catch {
-            // ignore
-          }
-        }
+    // Serialize layers with full lossless PNG base64 encoding for raster/masks
+    const serializedLayers: ImateSerializedLayer[] = doc.layers.map((layer) => {
+      const { canvas, maskCanvas, ...rest } = layer;
+      let dataUrl: string | undefined = undefined;
+      let maskDataUrl: string | undefined = undefined;
 
-        return {
-          ...rest,
-          dataUrl,
-          maskDataUrl,
-        };
-      }),
+      if (canvas) {
+        try {
+          dataUrl = canvas.toDataURL('image/png');
+        } catch {
+          // ignore potential canvas extraction error
+        }
+      }
+
+      if (maskCanvas) {
+        try {
+          maskDataUrl = maskCanvas.toDataURL('image/png');
+        } catch {
+          // ignore
+        }
+      }
+
+      return {
+        ...rest,
+        dataUrl,
+        maskDataUrl,
+      };
+    });
+
+    const imatePackage: ImateFilePackage = {
+      format: 'IMATELAYERS',
+      version: '1.0',
+      generator: 'ImageMate Studio',
+      savedAt: Date.now(),
+      title: filename,
+      document: {
+        id: doc.id || `doc-${Date.now()}`,
+        title: filename,
+        width: doc.width,
+        height: doc.height,
+        dpi: doc.dpi || 72,
+        colorMode: doc.colorMode || 'RGB',
+        background: doc.background || 'white',
+        backgroundColor: doc.backgroundColor || '#ffffff',
+        activeLayerId: doc.activeLayerId,
+        selectedLayerIds: doc.selectedLayerIds || (doc.activeLayerId ? [doc.activeLayerId] : []),
+        zoom: doc.zoom || 1,
+        pan: doc.pan || { x: 0, y: 0 },
+        guides: doc.guides || [],
+        rulersVisible: doc.rulersVisible ?? true,
+        gridVisible: doc.gridVisible ?? false,
+        showRulers: doc.showRulers ?? true,
+        showGrid: doc.showGrid ?? false,
+        showGuides: doc.showGuides ?? true,
+        snapToGuides: doc.snapToGuides ?? true,
+        snapToGrid: doc.snapToGrid ?? false,
+        selection: doc.selection || null,
+        historyIndex: 0,
+        layers: serializedLayers,
+      },
     };
 
-    const jsonString = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(serializableDoc, null, 2));
-    const filename = doc.title.endsWith('.json') ? doc.title : `${doc.title}.psd.json`;
+    // Use Blob and URL.createObjectURL for memory safety with high-resolution graphics
+    const jsonString = JSON.stringify(imatePackage, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/x-imagemate' });
+    const url = URL.createObjectURL(blob);
+
     const link = document.createElement('a');
     link.download = filename;
-    link.href = jsonString;
+    link.href = url;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Free memory
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+    return filename;
+  }
+
+  /**
+   * Load and parse a .imate (or .json / .psd.json) file and reconstitute a complete DocumentProject
+   * with restored canvas elements, masks, typography, shapes, and layer hierarchies.
+   */
+  static async loadImateDocument(file: File): Promise<DocumentProject> {
+    const text = await file.text();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new Error('Invalid file format. Could not parse document data.');
+    }
+
+    // Support both the IMATELAYERS container format and raw DocumentProject JSON
+    const docData = parsed.format === 'IMATELAYERS' && parsed.document ? parsed.document : parsed;
+
+    if (!docData || !Array.isArray(docData.layers)) {
+      throw new Error('The selected file does not appear to be a valid ImageMate (.imate) document.');
+    }
+
+    // Reconstitute all layers and their canvas elements asynchronously
+    const reconstitutedLayers: Layer[] = await Promise.all(
+      docData.layers.map(async (rawLayer: any, idx: number) => {
+        let canvas: HTMLCanvasElement | undefined = undefined;
+        let maskCanvas: HTMLCanvasElement | undefined = undefined;
+
+        if (rawLayer.dataUrl) {
+          canvas = await new Promise<HTMLCanvasElement>((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const c = document.createElement('canvas');
+              c.width = rawLayer.width || img.naturalWidth || img.width;
+              c.height = rawLayer.height || img.naturalHeight || img.height;
+              const ctx = c.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0);
+              }
+              resolve(c);
+            };
+            img.onerror = () => {
+              const fallback = document.createElement('canvas');
+              fallback.width = Math.max(1, rawLayer.width || 100);
+              fallback.height = Math.max(1, rawLayer.height || 100);
+              resolve(fallback);
+            };
+            img.src = rawLayer.dataUrl;
+          });
+        } else if (rawLayer.type === 'raster') {
+          canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, rawLayer.width || docData.width || 1920);
+          canvas.height = Math.max(1, rawLayer.height || docData.height || 1080);
+        }
+
+        if (rawLayer.maskDataUrl) {
+          maskCanvas = await new Promise<HTMLCanvasElement>((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const c = document.createElement('canvas');
+              c.width = rawLayer.width || img.naturalWidth || img.width;
+              c.height = rawLayer.height || img.naturalHeight || img.height;
+              const ctx = c.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0);
+              }
+              resolve(c);
+            };
+            img.onerror = () => resolve(document.createElement('canvas'));
+            img.src = rawLayer.maskDataUrl;
+          });
+        }
+
+        return {
+          id: rawLayer.id || `layer-${Date.now()}-${idx}`,
+          name: rawLayer.name || `Layer ${idx + 1}`,
+          type: rawLayer.type || 'raster',
+          visible: rawLayer.visible !== undefined ? rawLayer.visible : true,
+          locked: rawLayer.locked !== undefined ? rawLayer.locked : false,
+          opacity: typeof rawLayer.opacity === 'number' ? rawLayer.opacity : 100,
+          blendMode: rawLayer.blendMode || 'normal',
+          x: rawLayer.x || 0,
+          y: rawLayer.y || 0,
+          width: rawLayer.width || docData.width || 1920,
+          height: rawLayer.height || docData.height || 1080,
+          rotation: rawLayer.rotation || 0,
+          scaleX: rawLayer.scaleX ?? 1,
+          scaleY: rawLayer.scaleY ?? 1,
+          canvas,
+          maskCanvas,
+          maskEnabled: rawLayer.maskEnabled,
+          isEditingMask: rawLayer.isEditingMask,
+          // Text specific properties
+          text: rawLayer.text,
+          fontFamily: rawLayer.fontFamily,
+          fontSize: rawLayer.fontSize,
+          fontWeight: rawLayer.fontWeight,
+          fontStyle: rawLayer.fontStyle,
+          textColor: rawLayer.textColor,
+          textAlign: rawLayer.textAlign,
+          letterSpacing: rawLayer.letterSpacing,
+          lineHeight: rawLayer.lineHeight,
+          warp: rawLayer.warp,
+          // Shape specific properties
+          shapeType: rawLayer.shapeType,
+          fillColor: rawLayer.fillColor,
+          strokeColor: rawLayer.strokeColor,
+          strokeWidth: rawLayer.strokeWidth,
+          cornerRadius: rawLayer.cornerRadius,
+          sides: rawLayer.sides,
+          starPoints: rawLayer.starPoints,
+          // Adjustment specific properties
+          adjustmentType: rawLayer.adjustmentType,
+          adjustmentParams: rawLayer.adjustmentParams,
+          // Group properties
+          children: rawLayer.children,
+          // Layer styles / effects
+          effects: rawLayer.effects || {},
+        };
+      })
+    );
+
+    const title = file.name || docData.title || 'Untitled.imate';
+
+    return {
+      id: docData.id || `doc-${Date.now()}`,
+      title,
+      width: docData.width || 1920,
+      height: docData.height || 1080,
+      dpi: docData.dpi || 72,
+      colorMode: docData.colorMode || 'RGB',
+      background: docData.background || 'white',
+      backgroundColor: docData.backgroundColor || '#ffffff',
+      layers: reconstitutedLayers,
+      activeLayerId: docData.activeLayerId || reconstitutedLayers[reconstitutedLayers.length - 1]?.id || null,
+      selectedLayerIds: docData.selectedLayerIds || (docData.activeLayerId ? [docData.activeLayerId] : []),
+      history: [],
+      historyIndex: 0,
+      zoom: docData.zoom || 1,
+      pan: docData.pan || { x: 0, y: 0 },
+      guides: Array.isArray(docData.guides) ? docData.guides : [],
+      rulersVisible: docData.rulersVisible ?? true,
+      gridVisible: docData.gridVisible ?? false,
+      showRulers: docData.showRulers ?? true,
+      showGrid: docData.showGrid ?? false,
+      showGuides: docData.showGuides ?? true,
+      snapToGuides: docData.snapToGuides ?? true,
+      snapToGrid: docData.snapToGrid ?? false,
+      selection: docData.selection || null,
+    };
+  }
+
+  /**
+   * Save Project as JSON (backward compatibility alias for saveImateDocument)
+   */
+  static saveProjectJson(doc: DocumentProject) {
+    return this.saveImateDocument(doc);
   }
 
   /**

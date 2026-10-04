@@ -145,7 +145,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = ({
               activeLayerId &&
               onUpdateLayer(activeLayerId, { opacity: Number(e.target.value) })
             }
-            className="flex-1 accent-[#007acc] h-1.5 bg-[#181818] rounded disabled:opacity-50"
+            className="flex-1 accent-[var(--theme-accent)] h-1.5 bg-[#181818] rounded disabled:opacity-50 cursor-pointer"
           />
           <span className="w-9 text-right font-mono text-gray-200">
             {activeLayer?.opacity || 100}%

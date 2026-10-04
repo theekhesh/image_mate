@@ -21,18 +21,24 @@ import {
   Eye,
   Settings,
   Keyboard,
-  Monitor,
   Scissors,
   Copy,
   Clipboard,
   RotateCw,
   FlipHorizontal,
   FlipVertical,
+  Palette,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { DocumentProject, AdjustmentType } from '../types/imagemate';
 import { FileExporter } from '../utils/fileExporter';
+import { BUILTIN_THEMES } from '../utils/themeEngine';
 
 interface TopMenuBarProps {
+  currentThemeId?: string;
+  onOpenThemeModal?: () => void;
+  onSelectTheme?: (themeId: string) => void;
   documents?: DocumentProject[];
   activeDocId?: string;
   projectName?: string;
@@ -46,6 +52,7 @@ interface TopMenuBarProps {
   onOpenImage?: () => void;
   onOpenDocument?: () => void;
   onSaveProject: () => void;
+  onSaveAsProject?: () => void;
   onExport?: () => void;
   onExportImage?: () => void;
   onUndo: () => void;
@@ -77,9 +84,20 @@ interface TopMenuBarProps {
   onSelectAll?: () => void;
   onDeselect?: () => void;
   onInvertSelection?: () => void;
+  onCopy?: () => void;
+  onCut?: () => void;
+  onPaste?: () => void;
+  onRasterizeLayer?: () => void;
+  onInvertLayer?: () => void;
+  onFillForeground?: () => void;
+  onFillBackground?: () => void;
+  onFreeTransform?: () => void;
 }
 
 export const TopMenuBar: React.FC<TopMenuBarProps> = ({
+  currentThemeId,
+  onOpenThemeModal,
+  onSelectTheme,
   documents,
   activeDocId,
   projectName,
@@ -93,6 +111,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
   onOpenImage,
   onOpenDocument,
   onSaveProject,
+  onSaveAsProject,
   onExport,
   onExportImage,
   onUndo,
@@ -124,9 +143,19 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
   onSelectAll,
   onDeselect,
   onInvertSelection,
+  onCopy,
+  onCut,
+  onPaste,
+  onRasterizeLayer,
+  onInvertLayer,
+  onFillForeground,
+  onFillBackground,
+  onFreeTransform,
 }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const themeDropdownRef = useRef<HTMLDivElement>(null);
 
   const docList = documents || [
     {
@@ -165,8 +194,12 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setActiveMenu(null);
+      }
+      if (themeDropdownRef.current && !themeDropdownRef.current.contains(target)) {
+        setIsThemeDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -229,7 +262,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                   onClick={() => closeAndRun(handleOpenImage)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
-                  <span className="flex items-center gap-2"><FolderOpen size={14} /> Open Image...</span>
+                  <span className="flex items-center gap-2"><FolderOpen size={14} /> Open Document / Image...</span>
                   <span className="text-[10px] text-gray-400">Ctrl+O</span>
                 </button>
                 <div className="h-px bg-[#3e3e42] my-1" />
@@ -238,8 +271,16 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                   onClick={() => closeAndRun(onSaveProject)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
-                  <span className="flex items-center gap-2"><Save size={14} /> Save PSD Project</span>
+                  <span className="flex items-center gap-2"><Save size={14} /> Save Document (.imate)</span>
                   <span className="text-[10px] text-gray-400">Ctrl+S</span>
+                </button>
+                <button
+                  id="menu-file-save-as"
+                  onClick={() => closeAndRun(onSaveAsProject || onSaveProject)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span className="flex items-center gap-2"><Save size={14} /> Save As (.imate)...</span>
+                  <span className="text-[10px] text-gray-400">Ctrl+Shift+S</span>
                 </button>
                 <button
                   id="menu-file-export"
@@ -301,19 +342,52 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 <div className="h-px bg-[#3e3e42] my-1" />
                 <button
                   id="menu-edit-cut"
-                  onClick={() => closeAndRun(onDeleteLayer)}
+                  onClick={() => closeAndRun(onCut)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
-                  <span className="flex items-center gap-2"><Scissors size={14} /> Cut Layer</span>
+                  <span className="flex items-center gap-2"><Scissors size={14} /> Cut</span>
                   <span className="text-[10px] text-gray-400">Ctrl+X</span>
                 </button>
                 <button
                   id="menu-edit-copy"
-                  onClick={() => closeAndRun(onDuplicateLayer)}
+                  onClick={() => closeAndRun(onCopy)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
                 >
-                  <span className="flex items-center gap-2"><Copy size={14} /> Duplicate Layer</span>
-                  <span className="text-[10px] text-gray-400">Ctrl+J</span>
+                  <span className="flex items-center gap-2"><Copy size={14} /> Copy</span>
+                  <span className="text-[10px] text-gray-400">Ctrl+C</span>
+                </button>
+                <button
+                  id="menu-edit-paste"
+                  onClick={() => closeAndRun(onPaste)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span className="flex items-center gap-2"><Clipboard size={14} /> Paste</span>
+                  <span className="text-[10px] text-gray-400">Ctrl+V</span>
+                </button>
+                <div className="h-px bg-[#3e3e42] my-1" />
+                <button
+                  id="menu-edit-transform"
+                  onClick={() => closeAndRun(onFreeTransform)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span className="flex items-center gap-2"><Crop size={14} /> Free Transform</span>
+                  <span className="text-[10px] text-gray-400">Ctrl+T</span>
+                </button>
+                <button
+                  id="menu-edit-fill-fg"
+                  onClick={() => closeAndRun(onFillForeground)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span>Fill with Foreground</span>
+                  <span className="text-[10px] text-gray-400">Alt+Del</span>
+                </button>
+                <button
+                  id="menu-edit-fill-bg"
+                  onClick={() => closeAndRun(onFillBackground)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span>Fill with Background</span>
+                  <span className="text-[10px] text-gray-400">Ctrl+Del</span>
                 </button>
                 <div className="h-px bg-[#3e3e42] my-1" />
                 <button
@@ -323,6 +397,13 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 >
                   <span className="flex items-center gap-2"><Keyboard size={14} /> Keyboard Shortcuts</span>
                   <span className="text-[10px] text-gray-400">Ctrl+Shift+K</span>
+                </button>
+                <button
+                  id="menu-edit-theme-prefs"
+                  onClick={() => closeAndRun(onOpenThemeModal)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span className="flex items-center gap-2"><Palette size={14} /> Theme Preferences...</span>
                 </button>
               </div>
             )}
@@ -476,6 +557,22 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                 >
                   <span className="flex items-center gap-2"><X size={14} /> Delete Layer</span>
                   <span className="text-[10px] text-gray-400">Del</span>
+                </button>
+                <div className="h-px bg-[#3e3e42] my-1" />
+                <button
+                  id="menu-layer-rasterize"
+                  onClick={() => closeAndRun(onRasterizeLayer)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span>Rasterize Layer</span>
+                </button>
+                <button
+                  id="menu-layer-invert"
+                  onClick={() => closeAndRun(onInvertLayer)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span>Invert Colors</span>
+                  <span className="text-[10px] text-gray-400">Ctrl+I</span>
                 </button>
                 <div className="h-px bg-[#3e3e42] my-1" />
                 <button
@@ -666,6 +763,14 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                   <span>{activeDoc?.gridVisible ? '✓ ' : '  '}Pixel Grid</span>
                   <span className="text-[10px] text-gray-400">Ctrl+'</span>
                 </button>
+                <div className="h-px bg-[#3e3e42] my-1" />
+                <button
+                  id="menu-view-themes"
+                  onClick={() => closeAndRun(onOpenThemeModal)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007acc] hover:text-white flex justify-between items-center"
+                >
+                  <span className="flex items-center gap-2"><Palette size={13} /> Color Themes...</span>
+                </button>
               </div>
             )}
           </div>
@@ -693,7 +798,7 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
                   <span className="text-[10px] text-gray-400">F1</span>
                 </button>
                 <div className="px-3 py-2 text-[11px] text-gray-400 border-t border-[#3e3e42] mt-1">
-                  ImageMate Studio v2.4 (Web & Linux Desktop Edition)
+                  ImageMate Studio v2.4
                 </div>
               </div>
             )}
@@ -702,6 +807,76 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
 
         {/* Right: Quick Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Quick Theme Switcher Dropdown */}
+          <div ref={themeDropdownRef} className="relative">
+            <button
+              id="quick-btn-theme"
+              type="button"
+              onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
+              title="Change Workspace Theme (Tokyo Night, Dracula, Nord, etc.)"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#252526] hover:bg-[#333333] text-gray-200 text-[11px] font-medium border border-[#3e3e42] transition-colors cursor-pointer"
+            >
+              <Palette size={13} className="text-cyan-400" />
+              <span className="max-w-[90px] truncate">
+                {BUILTIN_THEMES.find((t) => t.id === currentThemeId)?.name || 'Theme'}
+              </span>
+              <ChevronDown size={11} className="text-gray-400" />
+            </button>
+
+            {isThemeDropdownOpen && (
+              <div className="absolute right-0 top-full mt-1 w-56 bg-[#252526] border border-[#3e3e42] rounded-lg shadow-2xl py-1 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+                <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-cyan-400 font-bold border-b border-[#333333] mb-1 flex items-center justify-between">
+                  <span>Color Themes</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsThemeDropdownOpen(false);
+                      onOpenThemeModal?.();
+                    }}
+                    className="hover:underline text-[10px] text-gray-400 hover:text-white cursor-pointer"
+                  >
+                    All Themes →
+                  </button>
+                </div>
+                {BUILTIN_THEMES.slice(0, 7).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      onSelectTheme?.(t.id);
+                      setIsThemeDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[#333333] hover:text-white cursor-pointer transition-colors ${
+                      currentThemeId === t.id ? 'bg-[#007acc] text-white font-medium' : 'text-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0"
+                        style={{ backgroundColor: t.colors.accent }}
+                      />
+                      <span>{t.name}</span>
+                    </div>
+                    {currentThemeId === t.id && <Check size={12} />}
+                  </button>
+                ))}
+                <div className="border-t border-[#333333] mt-1 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsThemeDropdownOpen(false);
+                      onOpenThemeModal?.();
+                    }}
+                    className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-[#333333] text-cyan-400 hover:text-cyan-300 font-medium cursor-pointer"
+                  >
+                    <Palette size={13} />
+                    <span>More Themes & Customizer...</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* AI Auto-Enhance quick button */}
           <button
             id="quick-btn-ai-enhance"
@@ -722,15 +897,6 @@ export const TopMenuBar: React.FC<TopMenuBarProps> = ({
             <Download size={13} />
             <span>Export</span>
           </button>
-
-          {/* Linux Desktop Compatibility Badge */}
-          <div
-            title="Optimized for Web & Linux Desktop (Wayland / X11 / Chrome / Electron)"
-            className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#181818] border border-[#333333] text-[10px] text-emerald-400 font-mono hidden md:flex"
-          >
-            <Monitor size={11} />
-            <span>Linux/Web Ready</span>
-          </div>
         </div>
       </div>
 

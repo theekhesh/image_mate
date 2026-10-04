@@ -114,7 +114,7 @@ export const NavigatorPanel: React.FC<NavigatorPanelProps> = ({
             step="0.05"
             value={doc.zoom}
             onChange={(e) => onSetZoom(Number(e.target.value))}
-            className="flex-1 accent-[#007acc] h-1.5 bg-[#181818] rounded"
+            className="flex-1 accent-[var(--theme-accent)] h-1.5 bg-[#181818] rounded cursor-pointer"
           />
           <ZoomIn size={13} className="text-gray-400" />
           <span className="w-10 text-right font-mono">{Math.round(doc.zoom * 100)}%</span>

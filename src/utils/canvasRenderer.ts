@@ -16,6 +16,7 @@ export class CanvasRenderer {
       renderBackground?: boolean;
       renderOverlays?: boolean;
       activeLayerId?: string | null;
+      activeTool?: string;
       showGuides?: boolean;
       showGrid?: boolean;
     } = {}
@@ -24,9 +25,10 @@ export class CanvasRenderer {
       renderBackground = true,
       renderOverlays = true,
       activeLayerId = doc.activeLayerId,
+      activeTool = 'move',
       showGuides = doc.rulersVisible,
       showGrid = doc.gridVisible,
-    } = options;
+    } = options as any;
 
     const { width, height } = doc;
     ctx.clearRect(0, 0, width, height);
@@ -64,9 +66,9 @@ export class CanvasRenderer {
       if (doc.selection && doc.selection.active) {
         this.renderSelection(ctx, doc.selection);
       }
-      if (activeLayerId) {
+      if (activeLayerId && activeTool === 'move') {
         const activeLayer = doc.layers.find((l) => l.id === activeLayerId);
-        if (activeLayer && !activeLayer.locked && activeLayer.visible) {
+        if (activeLayer && !activeLayer.locked && activeLayer.visible && !activeLayer.hiddenForEdit) {
           this.renderTransformHandles(ctx, activeLayer);
         }
       }
@@ -218,6 +220,8 @@ export class CanvasRenderer {
    * Render text with rich formatting and optional warp
    */
   private static renderText(ctx: CanvasRenderingContext2D, layer: Layer) {
+    if (layer.hiddenForEdit) return;
+
     const text = layer.text || 'Text Layer';
     const fontSize = layer.fontSize || 48;
     const fontFamily = layer.fontFamily || 'Inter, sans-serif';
@@ -244,6 +248,36 @@ export class CanvasRenderer {
     });
 
     ctx.restore();
+  }
+
+  /**
+   * Measure text dimensions accurately
+   */
+  public static measureText(
+    text: string,
+    fontSize = 36,
+    fontFamily = 'Inter, sans-serif',
+    fontWeight = '600',
+    fontStyle = 'normal',
+    lineHeight = 1.2
+  ): { width: number; height: number } {
+    const lines = (text || ' ').split('\n');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return { width: 240, height: Math.max(40, lines.length * fontSize * lineHeight) };
+    }
+    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+    let maxW = 0;
+    lines.forEach((line) => {
+      const metrics = ctx.measureText(line.length ? line : ' ');
+      if (metrics.width > maxW) maxW = metrics.width;
+    });
+    const calculatedH = lines.length * (fontSize * lineHeight);
+    return {
+      width: Math.max(80, Math.ceil(maxW + 24)),
+      height: Math.max(36, Math.ceil(calculatedH + 12)),
+    };
   }
 
   /**

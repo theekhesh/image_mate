@@ -1,0 +1,16 @@
+{
+  "short_name": "ImageMate",
+  "name": "ImageMate - Professional Photo Editor",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#181818",
+  "theme_color": "#181818",
+  "display": "standalone",
+  "orientation": "landscape"
+}

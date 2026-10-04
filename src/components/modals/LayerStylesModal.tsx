@@ -212,7 +212,7 @@ export const LayerStylesModal: React.FC<LayerStylesModalProps> = ({
                           },
                         })
                       }
-                      className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                      className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                     />
                   </div>
 
@@ -235,7 +235,7 @@ export const LayerStylesModal: React.FC<LayerStylesModalProps> = ({
                           },
                         })
                       }
-                      className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                      className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                     />
                   </div>
 
@@ -321,7 +321,7 @@ export const LayerStylesModal: React.FC<LayerStylesModalProps> = ({
                           },
                         })
                       }
-                      className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                      className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                     />
                   </div>
                 </>
@@ -370,7 +370,7 @@ export const LayerStylesModal: React.FC<LayerStylesModalProps> = ({
                           },
                         })
                       }
-                      className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                      className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                     />
                   </div>
                 </>
@@ -419,7 +419,7 @@ export const LayerStylesModal: React.FC<LayerStylesModalProps> = ({
                           },
                         })
                       }
-                      className="accent-[#007acc] h-1.5 bg-[#141414] rounded"
+                      className="accent-[var(--theme-accent)] h-1.5 bg-[#141414] rounded"
                     />
                   </div>
                 </>
