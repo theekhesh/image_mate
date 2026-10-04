@@ -1,13 +1,45 @@
 {
-  "name": "react-example",
+  "name": "image-mate",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "main": "electron/main.cjs",
+  "author": "theekshana heshan <theekhesh@protonmail.com>",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/theekhesh/image_mate",
   "scripts": {
     "dev": "vite --port 3000 --host 0.0.0.0",
     "build": "vite build",
     "lint": "tsc --noEmit",
-    "preview": "vite preview --port 3000 --host 0.0.0.0"
+    "preview": "vite preview --port 3000 --host 0.0.0.0",
+    "electron:dev": "concurrently -k \"cross-env BROWSER=none vite --port 3000\" \"wait-on tcp:3000 && electron .\"",
+    "electron:build": "vite build && electron-builder",
+    "electron:pack": "vite build && electron-builder --dir",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "build": {
+    "appId": "com.imagemate.app",
+    "productName": "ImageMate",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.graphics-design"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Graphics"
+    }
   },
   "dependencies": {
     "lucide-react": "^1.16.0",
